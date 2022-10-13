@@ -1,2 +1,4 @@
 # E6156-Microservice3-Yiru-Brian
-This is the directory for the third microservice in project
+This is the directory for the third microservice in project.
+
+AWS Beanstalk - RDS Framework used.
