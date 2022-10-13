@@ -154,6 +154,12 @@ def forum():
 
     return rsp
 
+def write_post():
+    ## Obtain post values from web
+    ## Add info to database
+    ## show status update and reload forum API (redirect to page)
+
+
 @application.route('/forum/<cat>', methods=["GET"])
 def forum_subcat(cat):
     result = ForumPostResource.get_by_label(cat)
@@ -165,6 +171,12 @@ def forum_subcat(cat):
 
     return rsp
 
+def sort_post():
+    # TO DO...
+
+def filter_post():
+    # TO DO...
+
 @application.route('/forum/post/<id>', methods=["GET"])
 def post_details(id):
     result = ForumPostResource.get_by_id(id)
@@ -175,6 +187,12 @@ def post_details(id):
         rsp = Response("NOT FOUND", status=404, content_type="text/plain")
 
     return rsp
+
+def add_reaction(post_id):
+    ## add reactions to the specific post with post_id
+    ## 1. Obtain info from web
+    ## 2. add to reaction table in database
+    ## reload the post api
 
 
 
