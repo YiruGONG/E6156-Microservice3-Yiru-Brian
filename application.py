@@ -143,7 +143,7 @@ CORS(application)
 def hello_message():
     return welcome
 
-@application.route('/forum/')
+@application.route('/api/forum/')
 def forum():
     result = ForumPostResource.get_all_posts()
 
@@ -160,7 +160,7 @@ def write_post():
     ## show status update and reload forum API (redirect to page)
 
 
-@application.route('/forum/<cat>', methods=["GET"])
+@application.route('/api/forum/<cat>', methods=["GET"])
 def forum_subcat(cat):
     result = ForumPostResource.get_by_label(cat)
 
@@ -177,9 +177,9 @@ def sort_post():
 def filter_post():
     # TO DO...
 
-@application.route('/forum/post/<id>', methods=["GET"])
-def post_details(id):
-    result = ForumPostResource.get_by_id(id)
+@application.route('/api/forum/post/<post_id>', methods=["GET"])
+def post_details(post_id):
+    result = ForumPostResource.get_by_id(post_id)
 
     if result:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
@@ -193,6 +193,15 @@ def add_reaction(post_id):
     ## 1. Obtain info from web
     ## 2. add to reaction table in database
     ## reload the post api
+
+def thumps_up_post(post_id):
+    ## add thumps up / down
+
+@application.route('/api/forum/post/<post_id>/response/<res_id>', methods=["GET"])
+def thumps_up_response(res_id):
+    ## for response
+
+
 
 
 
