@@ -26,20 +26,33 @@ class ForumPostResource:
 
     @staticmethod
     def get_all_posts():
-        sql = "SELECT `Title`, `Author`, `Time`, L.`name` " \
-              "FROM f22_databases.Post P LEFT JOIN f22_databases.Location L " \
-              "ON P.Location_ID = L.Location_ID"
+        sql = "SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, P.Label, count(T.PT_id) AS thumbs " \
+              "FROM ms3.Post P " \
+              "LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
+              "LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
+              "GROUP BY P.Post_id, P.Title, P.Author, P.`Time`, Location, P.Label "
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         res = cur.execute(sql)
         result = cur.fetchall()
         return result
 
-    def get_by_label(label):
-        ## TO DO...
+    # def get_by_label(label):
+    #     ## TO DO...
 
-    def get_by_id(id):
-        ## TO DO...
+    def get_by_id(post_id):
+        conn = ForumPostResource._get_connection()
+        sql1 = "SELECT * " \
+               "FROM ms3.Post P LEFT JOIN ms3.Post_Thumbs T " \
+               "    ON P.Post_id = T.Post_id" \
+               "WHERE Post_ID = :post_id"
+        post = conn.cursor().execute(sql1, post_id=post_id).fetchall()
+
+        sql2 = "SELECT * FROM ms3.Response WHERE Post_ID = :post_id"
+        response = conn.cursor().execute(sql2).fetchall()
+
+        return list(post = post,
+                    response = response)
 
 
     # def get_by_key(key):

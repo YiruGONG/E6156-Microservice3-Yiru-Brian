@@ -2,7 +2,8 @@ import logging.handlers
 
 from flask import Flask, Response
 from flask_cors import CORS
-from form_post_resource import ForumPostResource
+from forum_post_resource import ForumPostResource
+from utils import DTEncoder
 
 import json
 from datetime import datetime
@@ -148,16 +149,16 @@ def forum():
     result = ForumPostResource.get_all_posts()
 
     if result:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response("NOT FOUND", status=404, content_type="text/plain")
 
     return rsp
 
-def write_post():
-    ## Obtain post values from web
-    ## Add info to database
-    ## show status update and reload forum API (redirect to page)
+# def write_post():
+#     ## Obtain post values from web
+#     ## Add info to database
+#     ## show status update and reload forum API (redirect to page)
 
 
 @application.route('/api/forum/<cat>', methods=["GET"])
@@ -171,11 +172,11 @@ def forum_subcat(cat):
 
     return rsp
 
-def sort_post():
-    # TO DO...
-
-def filter_post():
-    # TO DO...
+# def sort_post():
+#     # TO DO...
+#
+# def filter_post():
+#     # TO DO...
 
 @application.route('/api/forum/post/<post_id>', methods=["GET"])
 def post_details(post_id):
@@ -188,18 +189,18 @@ def post_details(post_id):
 
     return rsp
 
-def add_reaction(post_id):
-    ## add reactions to the specific post with post_id
-    ## 1. Obtain info from web
-    ## 2. add to reaction table in database
-    ## reload the post api
-
-def thumps_up_post(post_id):
-    ## add thumps up / down
-
-@application.route('/api/forum/post/<post_id>/response/<res_id>', methods=["GET"])
-def thumps_up_response(res_id):
-    ## for response
+# def add_reaction(post_id):
+#     ## add reactions to the specific post with post_id
+#     ## 1. Obtain info from web
+#     ## 2. add to reaction table in database
+#     ## reload the post api
+#
+# def thumbs_post(post_id):
+#     ## add thumps up / down
+#
+# @application.route('/api/forum/post/<post_id>/response/<res_id>', methods=["GET"])
+# def thumbs_response(res_id):
+#     ## for response
 
 
 
@@ -227,7 +228,7 @@ def thumps_up_response(res_id):
 
 
 if __name__ == '__main__':
-    application.run()
+    application.run(host="0.0.0.0", port=5012, debug=True)
 
 """
 def application(environ, start_response):
