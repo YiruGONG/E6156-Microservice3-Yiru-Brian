@@ -222,6 +222,21 @@ def thumbs_response(resp_id, user_id):
 
     return rsp
 
+# @application.route('/api/forum/mypost/<user_id>/', methods=["GET"])
+# def get_my_post(user_id):
+#     ###### Not completed yet
+#     return None
+#
+# @application.route('/api/forum/mypost/<user_id>/post/<post_id>/edit', methods=["GET","POST"])
+# def edit_post(user_id):
+#     ###### Not completed yet
+#     return None
+#
+# @application.route('/api/forum/mypost/<user_id>/post/<post_id>/delete', methods=["GET","POST"])
+# def delete_post(user_id):
+#     ###### Not completed yet
+#     return None
+
 
 
 
