@@ -1,6 +1,6 @@
 import logging.handlers
 
-from flask import Flask, Response
+from flask import Flask, Response, request
 from flask_cors import CORS
 from forum_post_resource import ForumPostResource
 from utils import DTEncoder
@@ -144,26 +144,28 @@ CORS(application)
 def hello_message():
     return welcome
 
-@application.route('/api/forum/')
-def forum():
-    result = ForumPostResource.get_all_posts()
+@application.route('/api/forum/user_id/<user_id>', methods=["GET"])
+def forum(user_id):
+    result = ForumPostResource.get_all_posts(user_id)
 
-    if result:
+    if result['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
-        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
 
     return rsp
 
-# def write_post():
-#     ## Obtain post values from web
-#     ## Add info to database
-#     ## show status update and reload forum API (redirect to page)
+@application.route('/api/forum/user_id/<user_id>', methods=["POST"])
+def write_post():
+    ## Obtain post values from web
+    ## Add info to database
+    ## show status update and reload forum API (redirect to page)
+    return None
 
 
-@application.route('/api/forum/<cat>', methods=["GET"])
-def forum_subcat(cat):
-    result = ForumPostResource.get_by_label(cat)
+@application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
+def forum_subcat(cat, user_id):
+    result = ForumPostResource.get_by_label(cat, user_id)
 
     if result:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
@@ -178,53 +180,50 @@ def forum_subcat(cat):
 # def filter_post():
 #     # TO DO...
 
-@application.route('/api/forum/post/<post_id>', methods=["GET"])
-def post_details(post_id):
-    result = ForumPostResource.get_by_id(post_id)
+@application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
+def post_details(post_id, user_id):
 
-    if result:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    result = ForumPostResource.get_by_id(post_id, user_id)
+
+    if result['post']['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+    elif result['response']['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response("NOT FOUND", status=404, content_type="text/plain")
 
     return rsp
 
-# def add_reaction(post_id):
-#     ## add reactions to the specific post with post_id
-#     ## 1. Obtain info from web
-#     ## 2. add to reaction table in database
-#     ## reload the post api
-#
-# def thumbs_post(post_id):
-#     ## add thumps up / down
-#
-# @application.route('/api/forum/post/<post_id>/response/<res_id>', methods=["GET"])
-# def thumbs_response(res_id):
-#     ## for response
+@application.route('/api/forum/post/<post_id>/response/<resp_id>/user_id/<user_id>', methods=["GET"])
+def add_response(post_id):
+    ## add reactions to the specific post with post_id
+    ## 1. Obtain info from web
+    ## 2. add to reaction table in database
+    ## reload the post api
+    return "Not done yet"
+
+@application.route('/api/forum/post/<post_id>/user_id/<user_id>/click_thumb', methods=["POST"])
+def thumbs_post(post_id, user_id):
+    result = ForumPostResource.click_thumb_post(post_id, user_id)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+
+    return rsp
+
+@application.route('/api/forum/resp/<resp_id>/user_id/<user_id>/click_thumb', methods=["POST"])
+def thumbs_response(resp_id, user_id):
+    result = ForumPostResource.click_thumb_response(resp_id, user_id)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+
+    return rsp
 
 
 
-
-
-
-
-
-# @application.route('/health')
-# def health():
-#
-#     the_host = socket.gethostbyname(socket.gethostname())
-#     the_host = str(the_host)
-#     the_time = str(datetime.utcnow())
-#
-#     rsp = {
-#         "status": "Healthy!",
-#         "at_time": the_time,
-#         "on_host": the_host
-#     }
-#
-#     rsp = Response(json.dumps(rsp), status=200, content_type="application/json")
-#
-#     return rsp
 
 
 if __name__ == '__main__':

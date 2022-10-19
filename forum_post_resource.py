@@ -25,35 +25,125 @@ class ForumPostResource:
         return conn
 
     @staticmethod
-    def get_all_posts():
-        sql = "SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, P.Label, count(T.PT_id) AS thumbs " \
+    def get_all_posts(user_id):
+        sql = "SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, " \
+              " P.Label, count(T.PT_id) AS thumbs, if(U.PT_ID is null, false, true) AS is_thumbed " \
               "FROM ms3.Post P " \
-              "LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
-              "LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
-              "GROUP BY P.Post_id, P.Title, P.Author, P.`Time`, Location, P.Label "
+              " LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
+              " LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
+              " LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID " \
+              "GROUP BY Post_id, Title, Author, `Time`, Location, Label"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
-        res = cur.execute(sql)
-        result = cur.fetchall()
+        try:
+            cur.execute(sql, user_id)
+            # if success
+            res = cur.fetchall()
+            if res:
+                result = {'success':True, 'data':res}
+            else:
+                result = {'success':False, 'message':'Not Found','data':res}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success':False, 'message':str(e)}
         return result
 
-    # def get_by_label(label):
-    #     ## TO DO...
+    def get_by_label(label):
+        ## TO DO...
+        return None
 
-    def get_by_id(post_id):
+    def get_by_id(post_id, user_id):
+
         conn = ForumPostResource._get_connection()
-        sql1 = "SELECT * " \
-               "FROM ms3.Post P LEFT JOIN ms3.Post_Thumbs T " \
-               "    ON P.Post_id = T.Post_id" \
-               "WHERE Post_ID = :post_id"
-        post = conn.cursor().execute(sql1, post_id=post_id).fetchall()
 
-        sql2 = "SELECT * FROM ms3.Response WHERE Post_ID = :post_id"
-        response = conn.cursor().execute(sql2).fetchall()
+        ## return post details
+        sql1 = """
+            SELECT P.* , count(T.PT_id) AS thumbs, if(U.PT_ID is null, false, true) AS is_thumbed
+            FROM ms3.Post P
+                LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+                LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
+            WHERE P.Post_ID = %s
+            GROUP BY P.Post_ID;
+            """
+        cur = conn.cursor()
+        try:
+            cur.execute(sql1, args=(user_id, post_id))
+            # if success
+            res = cur.fetchall()
+            if res:
+                post = {'success': True, 'data': res}
+            else:
+                post = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            post = {'success': False, 'message': str(e)}
 
-        return list(post = post,
-                    response = response)
+        ## return responses
+        sql2 = """
+            SELECT R.*, count(T.RT_ID) AS thumbs, if(U.RT_ID is null, false, true) AS is_thumbed
+            FROM ms3.Response R LEFT JOIN ms3.Response_Thumbs T
+                ON R.Response_ID = T.Response_ID
+                LEFT JOIN (SELECT * FROM ms3.Response_Thumbs WHERE User_ID= %s) U ON R.Response_ID = U.Response_ID
+            WHERE R.Post_ID = %s
+            GROUP BY R.Response_ID;
+        """
+        cur = conn.cursor()
+        try:
+            cur.execute(sql2, args=(user_id, post_id))
+            # if success
+            res = cur.fetchall()
+            if res:
+                response = {'success': True, 'data': res}
+            else:
+                response = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            response = {'success': False, 'message': str(e)}
+            return response
 
+        return {"post": post, "response": response}
+
+    def click_thumb_post(post_id, user_id):
+        sql_p = "SELECT * FROM ms3.Post_Thumbs WHERE Post_ID = %s AND User_ID = %s;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql_p, args=(post_id, user_id))
+            res = cur.fetchall()
+            # if already thumbed
+            if res:
+                sql = "DELETE FROM ms3.Post_Thumbs WHERE Post_ID = %s AND User_ID = %s;"
+                cur.execute(sql, args=(post_id, user_id))
+                result = {'success': True, 'message': 'Thumb deleted to post'}
+            else:
+                sql = "INSERT INTO ms3.Post_Thumbs VALUES (DEFAULT,%s,%s)"
+                cur.execute(sql, args=(post_id, user_id))
+                result = {'success': True, 'message': 'Thumb added to post'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def click_thumb_response(resp_id, user_id):
+        sql_p = "SELECT * FROM ms3.Response_Thumbs WHERE Response_ID = %s AND User_ID = %s;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql_p, args=(resp_id, user_id))
+            res = cur.fetchall()
+            # if already thumbed
+            if res:
+                sql = "DELETE FROM ms3.Response_Thumbs WHERE Response_ID = %s AND User_ID = %s;"
+                cur.execute(sql, args=(resp_id, user_id))
+                result = {'success': True, 'message': 'Thumb deleted to Response'}
+            else:
+                sql = "INSERT INTO ms3.Response_Thumbs VALUES (DEFAULT,%s,%s)"
+                cur.execute(sql, args=(resp_id, user_id))
+                result = {'success': True, 'message': 'Thumb added to Response'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
 
     # def get_by_key(key):
     #
