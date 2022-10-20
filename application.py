@@ -164,8 +164,8 @@ def write_post():
 
 
 @application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
-def forum_subcat(cat, user_id):
-    result = ForumPostResource.get_by_label(cat, user_id)
+def forum_cat(user_id, cat):
+    result = ForumPostResource.get_by_label(user_id, cat)
 
     if result:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
