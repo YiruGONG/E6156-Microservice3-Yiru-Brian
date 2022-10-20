@@ -155,35 +155,23 @@ def forum(user_id):
 
     return rsp
 
-@application.route('/api/forum/user_id/<user_id>', methods=["POST"])
-def write_post():
-    ## Obtain post values from web
-    ## Add info to database
-    ## show status update and reload forum API (redirect to page)
-    return None
-
-
 @application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
     result = ForumPostResource.get_by_label(user_id, cat)
 
-    if result:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    if result['post']['success']:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+    elif result['response']['success']:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response("NOT FOUND", status=404, content_type="text/plain")
 
     return rsp
 
-# def sort_post():
-#     # TO DO...
-#
-# def filter_post():
-#     # TO DO...
+@application.route('/api/forum/<post_id>/user_id/<user_id>', methods=["GET"])
+def post_details(user_id, post_id):
 
-@application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
-def post_details(post_id, user_id):
-
-    result = ForumPostResource.get_by_id(post_id, user_id)
+    result = ForumPostResource.get_by_id(user_id, post_id)
 
     if result['post']['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
@@ -194,13 +182,24 @@ def post_details(post_id, user_id):
 
     return rsp
 
-@application.route('/api/forum/post/<post_id>/response/<resp_id>/user_id/<user_id>', methods=["GET"])
-def add_response(post_id):
-    ## add reactions to the specific post with post_id
-    ## 1. Obtain info from web
-    ## 2. add to reaction table in database
-    ## reload the post api
-    return "Not done yet"
+@application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
+def add_post(user_id, title, location, label, content):
+    result = ForumPostResource.add_post(user_id, title, location, label, content)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+
+    return rsp
+
+@application.route('/api/forum/newresponse/user_id/<user_id>', methods=["POST"])
+def add_response(user_id, post_id, content):
+    result = ForumPostResource.add_post(user_id, post_id, content)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    return rsp
 
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>/click_thumb', methods=["POST"])
 def thumbs_post(post_id, user_id):
@@ -222,6 +221,12 @@ def thumbs_response(resp_id, user_id):
 
     return rsp
 
+# def sort_post():
+#     # TO DO...
+#
+# def filter_post():
+#     # TO DO...
+#
 # @application.route('/api/forum/mypost/<user_id>/', methods=["GET"])
 # def get_my_post(user_id):
 #     ###### Not completed yet
@@ -236,9 +241,6 @@ def thumbs_response(resp_id, user_id):
 # def delete_post(user_id):
 #     ###### Not completed yet
 #     return None
-
-
-
 
 
 if __name__ == '__main__':
