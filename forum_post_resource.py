@@ -48,7 +48,7 @@ class ForumPostResource:
             result = {'success':False, 'message':str(e)}
         return result
 
-    def get_by_label(user_id, label):
+    def get_posts_by_label(user_id, label):
         ## return posts
         sql1 = """
             SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs, 
@@ -111,7 +111,7 @@ class ForumPostResource:
             response = {'success': False, 'message': str(e)}
         return {"post": post, "response": response}
 
-    def get_by_id(user_id, post_id):
+    def get_posts_by_id(user_id, post_id):
 
         conn = ForumPostResource._get_connection()
 
@@ -159,6 +159,72 @@ class ForumPostResource:
             print(e)
             response = {'success': False, 'message': str(e)}
             return response
+
+        return {"post": post, "response": response}
+
+    def get_my_posts(user_id):
+
+        conn = ForumPostResource._get_connection()
+
+        ## return post details
+        sql1 = """
+            SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs,
+                if(U.Post_ID is null, false, true) AS is_Thumbed
+            FROM ms3.Post P
+                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+                LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+                LEFT JOIN (
+                    SELECT Post_ID
+                    FROM ms3.Post_Thumbs
+                    WHERE User_ID = %s
+                ) U ON P.Post_ID = U.Post_ID
+            WHERE P.Author = %s
+            GROUP BY P.Post_id;
+        """
+        cur = conn.cursor()
+        try:
+            cur.execute(sql1, args=(user_id, user_id))
+            # if success
+            res = cur.fetchall()
+            if res:
+                post = {'success': True, 'data': res}
+            else:
+                post = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            post = {'success': False, 'message': str(e)}
+
+        ## return responses
+        sql2 = """
+            SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+                if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
+            FROM ms3.Response R
+                LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+                LEFT JOIN (
+                    SELECT Response_ID, User_ID
+                    FROM ms3.Response_Thumbs
+                    WHERE User_ID = %s
+                ) U ON R.Response_ID = U.Response_ID
+                LEFT JOIN (
+                    SELECT Post_ID, Author
+                    FROM ms3.Post
+                    WHERE Author = %s
+                ) L ON R.Post_ID = L.Post_ID
+            GROUP BY R.Response_ID
+            HAVING mypost = TRUE;
+        """
+        cur = conn.cursor()
+        try:
+            cur.execute(sql2, args=(user_id, user_id))
+            # if success
+            res = cur.fetchall()
+            if res:
+                response = {'success': True, 'data': res}
+            else:
+                response = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            response = {'success': False, 'message': str(e)}
 
         return {"post": post, "response": response}
 

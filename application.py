@@ -157,7 +157,7 @@ def forum(user_id):
 
 @application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
-    result = ForumPostResource.get_by_label(user_id, cat)
+    result = ForumPostResource.get_posts_by_label(user_id, cat)
 
     if result['post']['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
@@ -169,9 +169,23 @@ def forum_cat(user_id, cat):
     return rsp
 
 @application.route('/api/forum/<post_id>/user_id/<user_id>', methods=["GET"])
-def post_details(user_id, post_id):
+def forum_post(user_id, post_id):
 
-    result = ForumPostResource.get_by_id(user_id, post_id)
+    result = ForumPostResource.get_posts_by_id(user_id, post_id)
+
+    if result['post']['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+    elif result['response']['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+    else:
+        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+
+    return rsp
+
+@application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
+def forum_mypost(user_id):
+
+    result = ForumPostResource.get_my_posts(user_id)
 
     if result['post']['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
@@ -226,11 +240,6 @@ def thumbs_response(resp_id, user_id):
 #
 # def filter_post():
 #     # TO DO...
-#
-# @application.route('/api/forum/mypost/<user_id>/', methods=["GET"])
-# def get_my_post(user_id):
-#     ###### Not completed yet
-#     return None
 #
 # @application.route('/api/forum/mypost/<user_id>/post/<post_id>/edit', methods=["GET","POST"])
 # def edit_post(user_id):
