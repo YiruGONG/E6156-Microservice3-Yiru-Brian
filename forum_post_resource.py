@@ -24,32 +24,6 @@ class ForumPostResource:
         )
         return conn
 
-    ## for testing. somehow our function cannot run queries with inputs?! ex. WHERE Author = %s can't be run properly
-    @staticmethod
-    def get_post_db(user_id):
-        sql = """
-                SELECT *
-                FROM ms3.Post;
-            """
-        conn = ForumPostResource._get_connection()
-        print("fpr.py post_db conn:", conn)
-        cur = conn.cursor()
-        print("fpr.py post_db cur:", cur)
-        try:
-            cur.execute(sql)
-            print(sql)
-            # if success
-            res = cur.fetchall()
-            print("fpr.py post_db res:", res)
-            if res:
-                result = {'success': True, 'data': res}
-            else:
-                result = {'success': False, 'message': 'Not Found', 'data': res}
-        except pymysql.Error as e:
-            print(e)
-            result = {'success': False, 'message': str(e)}
-        return result
-
     @staticmethod
     def get_all_posts(user_id):
         sql = """
@@ -61,11 +35,9 @@ class ForumPostResource:
             GROUP BY Post_id, Title, Author, Time, Location, Label;
         """
         conn = ForumPostResource._get_connection()
-        print("fpr.py all_post conn:", conn)
         cur = conn.cursor()
-        print("fpr.py all_post cur:", cur)
         try:
-            cur.execute(sql, user_id)
+            cur.execute(sql % user_id)
             print(sql % user_id)
             # if success
             res = cur.fetchall()
@@ -101,8 +73,10 @@ class ForumPostResource:
         cur = conn.cursor()
         print("fpr.py post_by_label cur:", cur)
         try:
-            cur.execute(sql1, args=(user_id, label))
-            print(sql1 % (user_id, label))
+            ## cur.execute(sql1, args=(arg1, arg2))
+            ## cur.execute(sql1, args=('Yiru Gong', 'Administrative'))
+            cur.execute(sql1 % (user_id, label))
+
             # if success
             res = cur.fetchall()
             print("fpr.py post_by_label res:", res)
@@ -118,7 +92,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
+            SELECT R.Response_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
                 if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
@@ -137,7 +111,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql2, args=(user_id, label))
+            cur.execute(sql2 % (user_id, label))
             # if success
             res = cur.fetchall()
             if res:
@@ -167,7 +141,7 @@ class ForumPostResource:
             """
         cur = conn.cursor()
         try:
-            cur.execute(sql1, args=(user_id, post_id))
+            cur.execute(sql1 % (user_id, post_id))
             # if success
             res = cur.fetchall()
             if res:
@@ -189,7 +163,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql2, args=(user_id, post_id))
+            cur.execute(sql2 % (user_id, post_id))
             # if success
             res = cur.fetchall()
             if res:
@@ -224,7 +198,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql1, args=(user_id, user_id))
+            cur.execute(sql1 % (user_id, user_id))
             # if success
             res = cur.fetchall()
             if res:
@@ -237,7 +211,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+            SELECT R.Response_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
                 if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
@@ -256,7 +230,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql2, args=(user_id, user_id))
+            cur.execute(sql2 % (user_id, user_id))
             # if success
             res = cur.fetchall()
             if res:
