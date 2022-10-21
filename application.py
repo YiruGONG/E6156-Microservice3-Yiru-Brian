@@ -144,6 +144,17 @@ CORS(application)
 def hello_message():
     return welcome
 
+@application.route('/api/db/user_id/<user_id>', methods=["GET"])
+def post_db(user_id):
+    result = ForumPostResource.get_post_db(user_id)
+
+    if result['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+
+    return rsp
+
 @application.route('/api/forum/user_id/<user_id>', methods=["GET"])
 def forum(user_id):
     result = ForumPostResource.get_all_posts(user_id)
@@ -157,6 +168,7 @@ def forum(user_id):
 
 @application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
+    # print("cat:", cat, "user_id: ", user_id)
     result = ForumPostResource.get_posts_by_label(user_id, cat)
 
     if result['post']['success']:
@@ -164,7 +176,7 @@ def forum_cat(user_id, cat):
     elif result['response']['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     else:
-        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        rsp = Response("No post in this category", status=404, content_type="text/plain")
 
     return rsp
 

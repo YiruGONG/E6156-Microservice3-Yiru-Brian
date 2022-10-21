@@ -24,30 +24,62 @@ class ForumPostResource:
         )
         return conn
 
+    ## for testing. somehow our function cannot run queries with inputs?! ex. WHERE Author = %s can't be run properly
     @staticmethod
-    def get_all_posts(user_id):
-        sql = "SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, " \
-              " P.Label, count(T.PT_id) AS thumbs, if(U.PT_ID is null, false, true) AS is_thumbed " \
-              "FROM ms3.Post P " \
-              " LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
-              " LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
-              " LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID " \
-              "GROUP BY Post_id, Title, Author, `Time`, Location, Label"
+    def get_post_db(user_id):
+        sql = """
+                SELECT *
+                FROM ms3.Post;
+            """
         conn = ForumPostResource._get_connection()
+        print("fpr.py post_db conn:", conn)
         cur = conn.cursor()
+        print("fpr.py post_db cur:", cur)
         try:
-            cur.execute(sql, user_id)
+            cur.execute(sql)
+            print(sql)
             # if success
             res = cur.fetchall()
+            print("fpr.py post_db res:", res)
             if res:
-                result = {'success':True, 'data':res}
+                result = {'success': True, 'data': res}
             else:
-                result = {'success':False, 'message':'Not Found','data':res}
+                result = {'success': False, 'message': 'Not Found', 'data': res}
         except pymysql.Error as e:
             print(e)
-            result = {'success':False, 'message':str(e)}
+            result = {'success': False, 'message': str(e)}
         return result
 
+    @staticmethod
+    def get_all_posts(user_id):
+        sql = """
+            SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, P.Label, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
+            FROM ms3.Post P
+            LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+            LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+            LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
+            GROUP BY Post_id, Title, Author, Time, Location, Label;
+        """
+        conn = ForumPostResource._get_connection()
+        print("fpr.py all_post conn:", conn)
+        cur = conn.cursor()
+        print("fpr.py all_post cur:", cur)
+        try:
+            cur.execute(sql, user_id)
+            print(sql % user_id)
+            # if success
+            res = cur.fetchall()
+            print("fpr.py all_post res:", res)
+            if res:
+                result = {'success': True, 'data': res}
+            else:
+                result = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    @staticmethod
     def get_posts_by_label(user_id, label):
         ## return posts
         sql1 = """
@@ -65,15 +97,21 @@ class ForumPostResource:
             GROUP BY P.Post_id;
         """
         conn = ForumPostResource._get_connection()
+        print("fpr.py post_by_label conn:", conn)
         cur = conn.cursor()
+        print("fpr.py post_by_label cur:", cur)
         try:
             cur.execute(sql1, args=(user_id, label))
+            print(sql1 % (user_id, label))
             # if success
             res = cur.fetchall()
+            print("fpr.py post_by_label res:", res)
             if res:
                 post = {'success': True, 'data': res}
+                print("sq1{'success': True, 'data': res}")
             else:
                 post = {'success': False, 'message': 'Not Found', 'data': res}
+                print("sq1{'success': False, 'message': 'Not Found', 'data': res}")
         except pymysql.Error as e:
             print(e)
             post = {'success': False, 'message': str(e)}
@@ -104,11 +142,14 @@ class ForumPostResource:
             res = cur.fetchall()
             if res:
                 response = {'success': True, 'data': res}
+                print("sq2{'success': True, 'data': res}")
             else:
                 response = {'success': False, 'message': 'Not Found', 'data': res}
+                print("sq2{'success': False, 'message': 'Not Found', 'data': res}")
         except pymysql.Error as e:
             print(e)
             response = {'success': False, 'message': str(e)}
+
         return {"post": post, "response": response}
 
     def get_posts_by_id(user_id, post_id):
