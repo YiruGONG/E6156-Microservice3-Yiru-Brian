@@ -144,18 +144,7 @@ CORS(application)
 def hello_message():
     return welcome
 
-@application.route('/api/db/user_id/<user_id>', methods=["GET"])
-def post_db(user_id):
-    result = ForumPostResource.get_post_db(user_id)
-
-    if result['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-
-    return rsp
-
-@application.route('/api/forum/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/user/<user_id>', methods=["GET"])
 def forum(user_id):
     result = ForumPostResource.get_all_posts(user_id)
 
@@ -166,7 +155,7 @@ def forum(user_id):
 
     return rsp
 
-@application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/<cat>/user/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
     # print("cat:", cat, "user_id: ", user_id)
     result = ForumPostResource.get_posts_by_label(user_id, cat)
@@ -180,7 +169,7 @@ def forum_cat(user_id, cat):
 
     return rsp
 
-@application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/post/<post_id>/user/<user_id>', methods=["GET"])
 def forum_post(user_id, post_id):
 
     result = ForumPostResource.get_posts_by_id(user_id, post_id)
@@ -194,7 +183,7 @@ def forum_post(user_id, post_id):
 
     return rsp
 
-@application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/myposts/user/<user_id>', methods=["GET"])
 def forum_mypost(user_id):
 
     result = ForumPostResource.get_my_posts(user_id)
@@ -208,23 +197,39 @@ def forum_mypost(user_id):
 
     return rsp
 
-@application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
-def add_post(user_id, title, location, label, content):
-    result = ForumPostResource.add_post(user_id, title, location, label, content)
-    if result['success']:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+@application.route('/api/forum/newpost/user/<user_id>', methods=["POST"])
+def add_post(user_id):
+    if request.method == 'POST':
+        post_res = ForumPostResource.add_post(user_id,
+                                              str(request.get_json()['title']),
+                                              str(request.get_json()['location']),
+                                              str(request.get_json()['label']),
+                                              str(request.get_json()['content']))
+        if post_res['success']:
+            res = {'success': True, 'message': 'post successful', 'userId': post_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+        else:
+            res = {'fail': True, 'message': 'post unsuccessful', 'userId': post_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
     else:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
 
     return rsp
 
-@application.route('/api/forum/newresponse/user_id/<user_id>', methods=["POST"])
-def add_response(user_id, post_id, content):
-    result = ForumPostResource.add_post(user_id, post_id, content)
-    if result['success']:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+@application.route('/api/forum/post/<post_id>/newresponse/user/<user_id>', methods=["POST"])
+def add_response(user_id, post_id):
+    if request.method == 'POST':
+        resp_res = ForumPostResource.add_response(user_id,
+                                                  post_id,
+                                                  str(request.get_json()['content']))
+        if resp_res['response']['success']:
+            res = {'success': True, 'message': 'response successful', 'userId': resp_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+        else:
+            res = {'fail': True, 'message': 'response unsuccessful', 'userId': resp_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
     else:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
     return rsp
 
 @application.route('/api/forum/click_thumb/post/<post_id>/user_id/<user_id>', methods=["POST"])
