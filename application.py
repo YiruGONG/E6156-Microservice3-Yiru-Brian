@@ -232,7 +232,7 @@ def add_response(user_id, post_id):
 
 @application.route('/api/forum/post/<post_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_post(user_id, post_id):
-    result = ForumPostResource.click_thumb_post(user_id, post_id)
+    result = ForumPostResource.click_thumb_post(post_id, user_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
@@ -242,7 +242,7 @@ def thumbs_post(user_id, post_id):
 
 @application.route('/api/forum/resp/<resp_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_response(user_id, resp_id):
-    result = ForumPostResource.click_thumb_response(user_id, resp_id)
+    result = ForumPostResource.click_thumb_response(resp_id, user_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
