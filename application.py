@@ -199,24 +199,38 @@ def forum_mypost(user_id):
 
 @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
 def add_post(user_id):
-    result = ForumPostResource.add_post(user_id, title, location, label, content)
-    if result['success']:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    if request.method == 'POST':
+        post_res = ForumPostResource.add_post(user_id,
+                                              str(request.get_json()['title']),
+                                              str(request.get_json()['location']),
+                                              str(request.get_json()['label']),
+                                              str(request.get_json()['content']))
+        if post_res['success']:
+            res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+            print("Post added")
     else:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Post not added")
 
     return rsp
 
-@application.route('/api/forum/newresponse/user_id/<user_id>', methods=["POST"])
-def add_response(user_id, post_id, content):
-    result = ForumPostResource.add_post(user_id, post_id, content)
-    if result['success']:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+@application.route('/api/forum/post/<post_id>/newresponse/user_id/<user_id>', methods=["POST"])
+def add_response(user_id, post_id):
+    if request.method == 'POST':
+        resp_res = ForumPostResource.add_response(user_id,
+                                                  post_id,
+                                                  str(request.get_json()['content']))
+        if resp_res['response']['success']:
+            res = {'success': True, 'message': 'response successfully added', 'details': resp_res}
+            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+            print("Response added")
     else:
-        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Response not added")
     return rsp
 
-@application.route('/api/forum/post/<post_id>/thumb/user/<user_id>', methods=["GET"])
+@application.route('/api/forum/post/<post_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_post(user_id, post_id):
     result = ForumPostResource.click_thumb_post(user_id, post_id)
     if result['success']:
@@ -226,7 +240,7 @@ def thumbs_post(user_id, post_id):
 
     return rsp
 
-@application.route('/api/forum/resp/<resp_id>/thumb/user/<user_id>', methods=["GET"])
+@application.route('/api/forum/resp/<resp_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_response(user_id, resp_id):
     result = ForumPostResource.click_thumb_response(user_id, resp_id)
     if result['success']:
