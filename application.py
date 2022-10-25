@@ -169,7 +169,7 @@ def forum_cat(user_id, cat):
     return rsp
 
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
-def forum_post(user_id, post_id):
+def post_details(user_id, post_id):
 
     result = ForumPostResource.get_posts_by_id(user_id, post_id)
 
@@ -192,7 +192,8 @@ def forum_mypost(user_id):
     elif result['response']['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
-        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        # rsp = Response("NOT FOUND", status=404, content_type="text/plain")
 
     return rsp
 
@@ -215,7 +216,7 @@ def add_response(user_id, post_id, content):
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     return rsp
 
-@application.route('/api/forum/click_thumb/post/<post_id>/user_id/<user_id>', methods=["POST"])
+@application.route('/api/forum/click_thumb/post/<post_id>/user_id/<user_id>', methods=["GET"])
 def thumbs_post(post_id, user_id):
     result = ForumPostResource.click_thumb_post(post_id, user_id)
     if result['success']:
@@ -225,9 +226,29 @@ def thumbs_post(post_id, user_id):
 
     return rsp
 
-@application.route('/api/forum/click_thumb/resp/<resp_id>/user_id/<user_id>', methods=["POST"])
+@application.route('/api/forum/click_thumb/resp/<resp_id>/user_id/<user_id>', methods=["GET"])
 def thumbs_response(resp_id, user_id):
     result = ForumPostResource.click_thumb_response(resp_id, user_id)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+
+    return rsp
+
+@application.route('/api/forum/delete/post/<post_id>/', methods=["GET"])
+def delete_post(post_id):
+    result = ForumPostResource.post_delete(post_id)
+    if result['success']:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result), status=200, content_type="application.json")
+
+    return rsp
+
+@application.route('/api/forum/delete/resp/<resp_id>/', methods=["GET"])
+def delete_resp(resp_id):
+    result = ForumPostResource.resp_delete(resp_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:

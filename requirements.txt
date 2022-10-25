@@ -7,3 +7,4 @@ MarkupSafe==2.0.1
 six==1.16.0
 Werkzeug==2.0.1
 pymysql==1.0.2
+numpy==1.23.4

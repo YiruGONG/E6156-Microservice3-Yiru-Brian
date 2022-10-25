@@ -2,7 +2,6 @@ import pymysql
 from datetime import datetime
 import os
 
-
 class ForumPostResource:
 
     def __int__(self):
@@ -26,8 +25,8 @@ class ForumPostResource:
 
     @staticmethod
     def get_all_posts(user_id):
-        sql = "SELECT P.Post_id, P.Title, P.Author, P.`Time`, L.name AS Location, " \
-              " P.Label, count(T.PT_id) AS thumbs, if(U.PT_ID is null, false, true) AS is_thumbed " \
+        sql = "SELECT P.Post_ID, P.Title, P.Author, P.`Time`, L.name AS Location, L.Map_URL, " \
+              "P.Label, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_thumbed " \
               "FROM ms3.Post P " \
               " LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
               " LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
@@ -40,7 +39,9 @@ class ForumPostResource:
             # if success
             res = cur.fetchall()
             if res:
-                result = {'success':True, 'data':res}
+                label = list(set([x['Label'] for x in res]))
+                label = [i for i in label if i is not None]
+                result = {'success':True, 'data':res, 'labels':label}
             else:
                 result = {'success':False, 'message':'Not Found','data':res}
         except pymysql.Error as e:
@@ -52,7 +53,7 @@ class ForumPostResource:
         ## return posts
         sql1 = """
             SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs, 
-                if(U.Post_ID is null, false, true) AS is_Thumbed
+                if(U.Post_ID is null, false, true) AS is_thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -81,7 +82,7 @@ class ForumPostResource:
         ## return responses
         sql2 = """
             SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
-                if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
+                if(U.Response_ID is null, false, true) AS is_thumbed, if(L.Post_ID is null, false, true) AS correct_Label
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
                 LEFT JOIN (
@@ -117,8 +118,9 @@ class ForumPostResource:
 
         ## return post details
         sql1 = """
-            SELECT P.* , count(T.PT_id) AS thumbs, if(U.PT_ID is null, false, true) AS is_thumbed
+            SELECT P.* , L.name AS Location, L.Map_URL, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_thumbed
             FROM ms3.Post P
+                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
                 LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
             WHERE P.Post_ID = %s
@@ -139,7 +141,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.*, count(T.RT_ID) AS thumbs, if(U.RT_ID is null, false, true) AS is_thumbed
+            SELECT R.*, count(T.RT_ID) AS Thumbs, if(U.RT_ID is null, false, true) AS is_thumbed
             FROM ms3.Response R LEFT JOIN ms3.Response_Thumbs T
                 ON R.Response_ID = T.Response_ID
                 LEFT JOIN (SELECT * FROM ms3.Response_Thumbs WHERE User_ID= %s) U ON R.Response_ID = U.Response_ID
@@ -169,7 +171,7 @@ class ForumPostResource:
         ## return post details
         sql1 = """
             SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs,
-                if(U.Post_ID is null, false, true) AS is_Thumbed
+                if(U.Post_ID is null, false, true) AS is_thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -197,7 +199,7 @@ class ForumPostResource:
         ## return responses
         sql2 = """
             SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
-                if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
+                if(U.Response_ID is null, false, true) AS is_thumbed,  if(L.Post_ID is null, false, true) AS mypost
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
                 LEFT JOIN (
@@ -257,6 +259,30 @@ class ForumPostResource:
                 result = {'success': True, 'data': res}
             else:
                 result = {'success': False, 'message': 'Not Found', 'data': res}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def post_delete(post_id):
+        sql = "DELETE FROM ms3.Post WHERE post_id = %s"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql, post_id)
+            result = {'success': True, 'message': 'Post deleted successfully'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def resp_delete(resp_id):
+        sql = "DELETE FROM ms3.Response WHERE response_id = %s"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql, resp_id)
+            result = {'success': True, 'message': 'Response deleted successfully'}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}
