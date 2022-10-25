@@ -168,7 +168,7 @@ def forum_cat(user_id, cat):
 
     return rsp
 
-@application.route('/api/forum/post/<post_id>/user/<user_id>', methods=["GET"])
+@application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
 def post_details(user_id, post_id):
 
     result = ForumPostResource.get_posts_by_id(user_id, post_id)
@@ -271,7 +271,7 @@ def delete_resp(resp_id):
 
 
 if __name__ == '__main__':
-    application.run(host="0.0.0.0", port=5012, debug=True)
+    application.run(host="localhost", port=5012, debug=True)
 
 """
 def application(environ, start_response):
