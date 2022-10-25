@@ -168,7 +168,7 @@ def forum_cat(user_id, cat):
 
     return rsp
 
-@application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/post/<post_id>/user/<user_id>', methods=["GET"])
 def post_details(user_id, post_id):
 
     result = ForumPostResource.get_posts_by_id(user_id, post_id)
@@ -193,7 +193,7 @@ def forum_mypost(user_id):
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-        # rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        # rsp = Response("Method Failed", status=404, content_type="text/plain")
 
     return rsp
 
@@ -216,9 +216,9 @@ def add_response(user_id, post_id, content):
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     return rsp
 
-@application.route('/api/forum/click_thumb/post/<post_id>/user_id/<user_id>', methods=["GET"])
-def thumbs_post(post_id, user_id):
-    result = ForumPostResource.click_thumb_post(post_id, user_id)
+@application.route('/api/forum/post/<post_id>/thumb/user/<user_id>', methods=["GET"])
+def thumbs_post(user_id, post_id):
+    result = ForumPostResource.click_thumb_post(user_id, post_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
@@ -226,13 +226,14 @@ def thumbs_post(post_id, user_id):
 
     return rsp
 
-@application.route('/api/forum/click_thumb/resp/<resp_id>/user_id/<user_id>', methods=["GET"])
-def thumbs_response(resp_id, user_id):
-    result = ForumPostResource.click_thumb_response(resp_id, user_id)
+@application.route('/api/forum/resp/<resp_id>/thumb/user/<user_id>', methods=["GET"])
+def thumbs_response(user_id, resp_id):
+    result = ForumPostResource.click_thumb_response(user_id, resp_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        print("Response thumb status not changed")
 
     return rsp
 

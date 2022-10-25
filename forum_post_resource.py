@@ -2,6 +2,7 @@ import pymysql
 from datetime import datetime
 import os
 
+
 class ForumPostResource:
 
     def __int__(self):
@@ -25,13 +26,14 @@ class ForumPostResource:
 
     @staticmethod
     def get_all_posts(user_id):
-        sql = "SELECT P.Post_ID, P.Title, P.Author, P.`Time`, L.name AS Location, L.Map_URL, " \
-              "P.Label, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_thumbed " \
-              "FROM ms3.Post P " \
-              " LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID " \
-              " LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id " \
-              " LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID " \
-              "GROUP BY Post_id, Title, Author, `Time`, Location, Label"
+        sql = """
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
+            FROM ms3.Post P
+            LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+            LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+            LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
+            GROUP BY Post_id, Title, User_ID, Time, Location, Label;
+        """
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
@@ -41,7 +43,7 @@ class ForumPostResource:
             if res:
                 label = list(set([x['Label'] for x in res]))
                 label = [i for i in label if i is not None]
-                result = {'success':True, 'data':res, 'labels':label}
+                result = {'success': True, 'data': res, 'labels': label}
             else:
                 result = {'success':False, 'message':'Not Found','data':res}
         except pymysql.Error as e:
@@ -52,8 +54,8 @@ class ForumPostResource:
     def get_posts_by_label(user_id, label):
         ## return posts
         sql1 = """
-            SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs, 
-                if(U.Post_ID is null, false, true) AS is_thumbed
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
+                if(U.Post_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -81,8 +83,8 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
-                if(U.Response_ID is null, false, true) AS is_thumbed, if(L.Post_ID is null, false, true) AS correct_Label
+            SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
+                if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
                 LEFT JOIN (
@@ -118,9 +120,8 @@ class ForumPostResource:
 
         ## return post details
         sql1 = """
-            SELECT P.* , L.name AS Location, L.Map_URL, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_thumbed
+            SELECT P.* , L.name AS Location, L.Map_URL, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
-                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
                 LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
             WHERE P.Post_ID = %s
@@ -141,7 +142,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.*, count(T.RT_ID) AS Thumbs, if(U.RT_ID is null, false, true) AS is_thumbed
+            SELECT R.*, count(T.RT_ID) AS Thumbs, if(U.RT_ID is null, false, true) AS is_Thumbed
             FROM ms3.Response R LEFT JOIN ms3.Response_Thumbs T
                 ON R.Response_ID = T.Response_ID
                 LEFT JOIN (SELECT * FROM ms3.Response_Thumbs WHERE User_ID= %s) U ON R.Response_ID = U.Response_ID
@@ -170,8 +171,8 @@ class ForumPostResource:
 
         ## return post details
         sql1 = """
-            SELECT P.Post_ID, P.Title, P.Author, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs,
-                if(U.Post_ID is null, false, true) AS is_thumbed
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, count(T.PT_ID) AS Thumbs,
+                if(U.Post_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -198,8 +199,8 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.Author, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
-                if(U.Response_ID is null, false, true) AS is_thumbed,  if(L.Post_ID is null, false, true) AS mypost
+            SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+                if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
                 LEFT JOIN (
@@ -261,8 +262,57 @@ class ForumPostResource:
                 result = {'success': False, 'message': 'Not Found', 'data': res}
         except pymysql.Error as e:
             print(e)
-            result = {'success': False, 'message': str(e)}
-        return result
+            resp_result = {'success': False, 'message': str(e)}
+        return {'post': post_result, 'response': resp_result}
+
+    def update_response(user_id, response_id, content):
+        ori_entry = {
+            "Post_ID": 5,
+            "Title": "first new post via postman again",
+            "User_ID": "Yiru Gong",
+            "Time": "2022-10-24 16:31:45",
+            "Location_ID": 2,
+            "Label": "Others",
+            "Content": "edit post api testing again",
+            "Edited": 0,
+            "Thumbs": 0,
+            "is_Thumbed": 0
+        }
+        # ori_entry = obj.get_post_by_id(user_id, post_id)["post"]["post_data"][0]
+        print("ori_entry received")
+        # for item in ["Title", "Location_ID", "Label", "Content"]:
+        #     print(ori_entry[item], type(ori_entry[item]))
+        # print(title, type(title), location, type(location), label, type(label), content, type(content))
+        if ori_entry["Title"] == title and ori_entry["Location_ID"] == int(location) and ori_entry["Label"] == label and ori_entry['Content'] == content:
+            result = {'success': False, 'message': 'post unedited'}
+            return result
+        else:
+            t = str(datetime.now())
+            sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
+            conn = ForumPostResource._get_connection()
+            cur = conn.cursor()
+            try:
+                cur.execute(sql_query)
+                key, val1 = next(iter(cur.fetchone().items()))
+                cur.execute("DELETE FROM ms3.Post WHERE Post_ID = %s" % post_id)
+                if location == 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, content, 1))
+                elif location == 'None' and label != 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, label, content, 1))
+                elif location != 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, content, 1))
+                else:
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, label, content, 1))
+                cur.execute(sql_query)
+                key, val2 = next(iter(cur.fetchone().items()))
+                if val2 == val1:
+                    result = {'success': True, 'message': 'post edited'}
+                else:
+                    result = {'success': False, 'message': 'post not edited'}
+            except pymysql.Error as e:
+                print(e)
+                result = {'success': False, 'message': str(e)}
+            return result
 
     def post_delete(post_id):
         sql = "DELETE FROM ms3.Post WHERE post_id = %s"
