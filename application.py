@@ -155,7 +155,7 @@ def forum(user_id):
 
     return rsp
 
-@application.route('/api/forum/<cat>/user_id/<user_id>', methods=["GET"])
+@application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
     result = ForumPostResource.get_posts_by_label(user_id, cat)
 

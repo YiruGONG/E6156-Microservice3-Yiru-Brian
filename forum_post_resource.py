@@ -122,6 +122,7 @@ class ForumPostResource:
         sql1 = """
             SELECT P.* , L.Name AS Location, L.Map_URL, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
+                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
                 LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
             WHERE P.Post_ID = %s
