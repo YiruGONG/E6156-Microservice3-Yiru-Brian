@@ -237,7 +237,7 @@ def thumbs_response(user_id, resp_id):
 
     return rsp
 
-@application.route('/api/forum/delete/post/<post_id>/', methods=["GET"])
+@application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
 def delete_post(post_id):
     result = ForumPostResource.post_delete(post_id)
     if result['success']:
@@ -247,7 +247,7 @@ def delete_post(post_id):
 
     return rsp
 
-@application.route('/api/forum/delete/resp/<resp_id>/', methods=["GET"])
+@application.route('/api/forum//resp/delete/<resp_id>/', methods=["GET"])
 def delete_resp(resp_id):
     result = ForumPostResource.resp_delete(resp_id)
     if result['success']:
