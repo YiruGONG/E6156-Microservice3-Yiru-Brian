@@ -198,7 +198,7 @@ def forum_mypost(user_id):
     return rsp
 
 @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
-def add_post(user_id, title, location, label, content):
+def add_post(user_id):
     result = ForumPostResource.add_post(user_id, title, location, label, content)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
@@ -268,10 +268,6 @@ def delete_resp(resp_id):
 #     ###### Not completed yet
 #     return None
 #
-# @application.route('/api/forum/mypost/<user_id>/post/<post_id>/delete', methods=["GET","POST"])
-# def delete_post(user_id):
-#     ###### Not completed yet
-#     return None
 
 
 if __name__ == '__main__':
