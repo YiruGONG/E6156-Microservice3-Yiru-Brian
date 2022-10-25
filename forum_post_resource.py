@@ -49,11 +49,10 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
-    @staticmethod
     def get_posts_by_label(user_id, label):
         ## return posts
         sql1 = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs, 
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
                 if(U.Post_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
@@ -85,7 +84,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
+            SELECT R.Response_ID, R.User_ID, R.Time, count(T.RT_ID) AS Thumbs, 
                 if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
@@ -117,7 +116,7 @@ class ForumPostResource:
 
         return {"post": post, "response": response}
 
-    def get_posts_by_id(user_id, post_id):
+    def get_post_by_id(user_id, post_id):
         ## return post details
         sql1 = """
             SELECT P.* , count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
@@ -134,9 +133,9 @@ class ForumPostResource:
             # if success
             res = cur.fetchall()
             if res:
-                post = {'success': True, 'data': res}
+                post = {'success': True, 'post_data': res}
             else:
-                post = {'success': False, 'message': 'Not Found', 'data': res}
+                post = {'success': False, 'message': 'Not Found'}
         except pymysql.Error as e:
             print(e)
             post = {'success': False, 'message': str(e)}
@@ -156,9 +155,11 @@ class ForumPostResource:
             # if success
             res = cur.fetchall()
             if res:
-                response = {'success': True, 'data': res}
+                response = {'success': True, 'resp_data': res}
+                print("response success")
             else:
-                response = {'success': False, 'message': 'Not Found', 'data': res}
+                response = {'success': False, 'message': 'Not Found'}
+                print("response failure")
         except pymysql.Error as e:
             print(e)
             response = {'success': False, 'message': str(e)}
@@ -168,7 +169,7 @@ class ForumPostResource:
     def get_my_posts(user_id):
         ## return post details
         sql1 = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, P.Content, count(T.PT_ID) AS Thumbs,
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.name AS Location, P.Label, count(T.PT_ID) AS Thumbs,
                 if(U.Post_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
@@ -197,7 +198,7 @@ class ForumPostResource:
 
         ## return responses
         sql2 = """
-            SELECT R.Response_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+            SELECT R.Response_ID, R.User_ID, R.Time, count(T.RT_ID) AS Thumbs,
                 if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
             FROM ms3.Response R
                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
@@ -238,13 +239,13 @@ class ForumPostResource:
             cur.execute(sql_query)
             key, val1 = next(iter(cur.fetchone().items()))
             if location == 'None' and label == 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Content) VALUES (%s, %s, %s, %s);", args=(title, user_id, t, content))
+                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Content) VALUES (\'%s\', %s, \'%s\', \'%s\';" % (title, user_id, t, content))
             elif location == 'None' and label != 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Label, Content) VALUES (%s, %s, %s, %s, %s);", args=(title, user_id, t, label, content))
+                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Label, Content) VALUES (\'%s\', %s, \'%s\', \'%s\', \'%s\');" % (title, user_id, t, label, content))
             elif location != 'None' and label == 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Content) VALUES (\'%s\', \'%s\', \'%s\', %d, \'%s\');" % (title, user_id, t, int(location), content))
+                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Content) VALUES (\'%s\', %s, \'%s\', %d, \'%s\');" % (title, user_id, t, int(location), content))
             else:
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Label, Content) VALUES (\'%s\', \'%s\', \'%s\', %d, \'%s\', \'%s\');" % (title, user_id, t, int(location), label, content))
+                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Label, Content) VALUES (\'%s\', %s, \'%s\', %d, \'%s\', \'%s\');" % (title, user_id, t, int(location), label, content))
             cur.execute(sql_query)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2-val1 == 1:
@@ -256,16 +257,65 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
+    def update_post(user_id, post_id, title, location, label, content):
+        ori_entry = {
+            "Post_ID": 5,
+            "Title": "first new post via postman again",
+            "User_ID": "Yiru Gong",
+            "Time": "2022-10-24 16:31:45",
+            "Location_ID": 2,
+            "Label": "Others",
+            "Content": "edit post api testing again",
+            "Editted": 0,
+            "Thumbs": 0,
+            "is_Thumbed": 0
+        }
+        # ori_entry = obj.get_post_by_id(user_id, post_id)["post"]["post_data"][0]
+        print("ori_entry received")
+        # for item in ["Title", "Location_ID", "Label", "Content"]:
+        #     print(ori_entry[item], type(ori_entry[item]))
+        # print(title, type(title), location, type(location), label, type(label), content, type(content))
+        if ori_entry["Title"] == title and ori_entry["Location_ID"] == int(location) and ori_entry["Label"] == label and ori_entry['Content'] == content:
+            result = {'success': False, 'message': 'post unedited'}
+            return result
+        else:
+            t = str(datetime.now())
+            sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
+            conn = ForumPostResource._get_connection()
+            cur = conn.cursor()
+            try:
+                cur.execute(sql_query)
+                key, val1 = next(iter(cur.fetchone().items()))
+                cur.execute("DELETE FROM ms3.Post WHERE Post_ID = %s" % post_id)
+                if location == 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, content, 1))
+                elif location == 'None' and label != 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, label, content, 1))
+                elif location != 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, content, 1))
+                else:
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, label, content, 1))
+                cur.execute(sql_query)
+                key, val2 = next(iter(cur.fetchone().items()))
+                if val2 == val1:
+                    result = {'success': True, 'message': 'post edited'}
+                else:
+                    result = {'success': False, 'message': 'post not edited'}
+            except pymysql.Error as e:
+                print(e)
+                result = {'success': False, 'message': str(e)}
+            return result
+
     def add_response(user_id, post_id, content):
         t = str(datetime.now())
-        sql_query_post = "SELECT Title FROM ms3.Post WHERE Post_ID = %d;"
-        sql_query_resp = "SELECT COUNT(Response_ID) FROM ms3.Response WHERE Post_ID = %d;"
-        sql_insert = "INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%d, %s, \'%s\', \'%s\');"
+        sql_query_post = "SELECT Title FROM ms3.Post WHERE Post_ID = %s;"
+        sql_query_resp = "SELECT COUNT(Response_ID) FROM ms3.Response WHERE Post_ID = %s;"
+        sql_insert = "INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, \'%s\', \'%s\');"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
 
         try:
-            cur.execute(sql_query_post % int(post_id))
+            cur.execute(sql_query_post % post_id)
             res = cur.fetchall()
             if res:
                 post_result = {'success': True, 'message': 'post found'}
@@ -276,10 +326,10 @@ class ForumPostResource:
             post_result = {'success': False, 'message': str(e)}
 
         try:
-            cur.execute(sql_query_resp % int(post_id))
+            cur.execute(sql_query_resp % post_id)
             key, val1 = next(iter(cur.fetchone().items()))
-            cur.execute(sql_insert % (int(post_id), user_id, t, content))
-            cur.execute(sql_query_resp % int(post_id))
+            cur.execute(sql_insert % (post_id, user_id, t, content))
+            cur.execute(sql_query_resp % post_id)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
                 resp_result = {'success': True, 'message': 'response added to post'}
@@ -291,7 +341,56 @@ class ForumPostResource:
 
         return {'post': post_result, 'response': resp_result}
 
-    def click_thumb_post(post_id, user_id):
+    def update_response(user_id, response_id, content):
+        ori_entry = {
+            "Post_ID": 5,
+            "Title": "first new post via postman again",
+            "User_ID": "Yiru Gong",
+            "Time": "2022-10-24 16:31:45",
+            "Location_ID": 2,
+            "Label": "Others",
+            "Content": "edit post api testing again",
+            "Edited": 0,
+            "Thumbs": 0,
+            "is_Thumbed": 0
+        }
+        # ori_entry = obj.get_post_by_id(user_id, post_id)["post"]["post_data"][0]
+        print("ori_entry received")
+        # for item in ["Title", "Location_ID", "Label", "Content"]:
+        #     print(ori_entry[item], type(ori_entry[item]))
+        # print(title, type(title), location, type(location), label, type(label), content, type(content))
+        if ori_entry["Title"] == title and ori_entry["Location_ID"] == int(location) and ori_entry["Label"] == label and ori_entry['Content'] == content:
+            result = {'success': False, 'message': 'post unedited'}
+            return result
+        else:
+            t = str(datetime.now())
+            sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
+            conn = ForumPostResource._get_connection()
+            cur = conn.cursor()
+            try:
+                cur.execute(sql_query)
+                key, val1 = next(iter(cur.fetchone().items()))
+                cur.execute("DELETE FROM ms3.Post WHERE Post_ID = %s" % post_id)
+                if location == 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, content, 1))
+                elif location == 'None' and label != 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, label, content, 1))
+                elif location != 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, content, 1))
+                else:
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, label, content, 1))
+                cur.execute(sql_query)
+                key, val2 = next(iter(cur.fetchone().items()))
+                if val2 == val1:
+                    result = {'success': True, 'message': 'post edited'}
+                else:
+                    result = {'success': False, 'message': 'post not edited'}
+            except pymysql.Error as e:
+                print(e)
+                result = {'success': False, 'message': str(e)}
+            return result
+
+    def click_thumb_post(user_id, post_id):
         sql_p = "SELECT * FROM ms3.Post_Thumbs WHERE Post_ID = %s AND User_ID = %s;"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
@@ -312,7 +411,7 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
-    def click_thumb_response(resp_id, user_id):
+    def click_thumb_response(user_id, resp_id):
         sql_p = "SELECT * FROM ms3.Response_Thumbs WHERE Response_ID = %s AND User_ID = %s;"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
@@ -322,10 +421,12 @@ class ForumPostResource:
             # if already thumbed
             if res:
                 sql = "DELETE FROM ms3.Response_Thumbs WHERE Response_ID = %s AND User_ID = %s;"
+                print("res suc")
                 cur.execute(sql % (resp_id, user_id))
                 result = {'success': True, 'message': 'Thumb deleted to Response'}
             else:
                 sql = "INSERT INTO ms3.Response_Thumbs VALUES (DEFAULT,%s,%s)"
+                print("res unsec")
                 cur.execute(sql % (resp_id, user_id))
                 result = {'success': True, 'message': 'Thumb added to Response'}
         except pymysql.Error as e:

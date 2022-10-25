@@ -151,7 +151,7 @@ def forum(user_id):
     if result['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
     else:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
 
     return rsp
 
@@ -160,40 +160,49 @@ def forum_cat(user_id, cat):
     # print("cat:", cat, "user_id: ", user_id)
     result = ForumPostResource.get_posts_by_label(user_id, cat)
 
-    if result['post']['success']:
+    if result['response']['success'] and result['response']['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+        print("Found posts with responses")
     elif result['response']['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+        print("Found posts with no responses")
     else:
-        rsp = Response("No post in this category", status=404, content_type="text/plain")
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("No posts found")
 
     return rsp
 
 @application.route('/api/forum/post/<post_id>/user/<user_id>', methods=["GET"])
 def forum_post(user_id, post_id):
 
-    result = ForumPostResource.get_posts_by_id(user_id, post_id)
+    result = ForumPostResource.get_post_by_id(user_id, post_id)
+    print(result)
 
-    if result['post']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+    if result['response']['success'] and result['response']['success']:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+        print("Found the post with responses")
     elif result['response']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+        print("Found the post with no responses")
     else:
-        rsp = Response("NOT FOUND TEST", status=404, content_type="text/plain")
+        rsp = Response("Method Failed", status=404, content_type="text/plain")
+        print("The post not found")
 
     return rsp
 
 @application.route('/api/forum/myposts/user/<user_id>', methods=["GET"])
-def forum_mypost(user_id):
+def forum_myposts(user_id):
 
     result = ForumPostResource.get_my_posts(user_id)
 
+    if result['post']['success'] and result['response']['success']:
+        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        print("Found posts with responses")
     if result['post']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-    elif result['response']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+        print("Found posts with no responses")
     else:
-        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+        rsp = Response("Method Failed", status=404, content_type="text/plain")
 
     return rsp
 
@@ -206,15 +215,31 @@ def add_post(user_id):
                                               str(request.get_json()['label']),
                                               str(request.get_json()['content']))
         if post_res['success']:
-            res = {'success': True, 'message': 'post successful', 'userId': post_res}
+            res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
-        else:
-            res = {'fail': True, 'message': 'post unsuccessful', 'userId': post_res}
-            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+            print("Post added")
     else:
         rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Post not added")
 
     return rsp
+
+@application.route('/api/forum/post/<post_id>/edit/user/<user_id>', methods=["GET", "POST"])
+def edit_post(user_id, post_id):
+    if request.method == 'GET':
+        results = ForumPostResource.get_post_by_id(user_id, post_id)["post"]["post_data"][0]
+        print("Post exists and could be edited")
+        return Response(json.dumps(results, cls=DTEncoder), status=200, content_type="application.json")
+    else:
+
+        results = ForumPostResource.update_post(user_id,
+                                                post_id,
+                                                str(request.get_json()['title']),
+                                                str(request.get_json()['location']),
+                                                str(request.get_json()['label']),
+                                                str(request.get_json()['content']))
+        print("Post edited")
+        return Response(json.dumps(results, cls=DTEncoder), status=200, content_type="application.json")
 
 @application.route('/api/forum/post/<post_id>/newresponse/user/<user_id>', methods=["POST"])
 def add_response(user_id, post_id):
@@ -223,32 +248,35 @@ def add_response(user_id, post_id):
                                                   post_id,
                                                   str(request.get_json()['content']))
         if resp_res['response']['success']:
-            res = {'success': True, 'message': 'response successful', 'userId': resp_res}
+            res = {'success': True, 'message': 'response successfully added', 'details': resp_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
-        else:
-            res = {'fail': True, 'message': 'response unsuccessful', 'userId': resp_res}
-            rsp = Response(json.dumps(res), status=200, content_type="application.json")
+            print("Response added")
     else:
         rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Response not added")
     return rsp
 
-@application.route('/api/forum/click_thumb/post/<post_id>/user_id/<user_id>', methods=["POST"])
-def thumbs_post(post_id, user_id):
-    result = ForumPostResource.click_thumb_post(post_id, user_id)
+@application.route('/api/forum/post/<post_id>/thumb/user/<user_id>', methods=["POST"])
+def thumbs_post(user_id, post_id):
+    result = ForumPostResource.click_thumb_post(user_id, post_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        print("Post thumbed up")
     else:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        print("Post thumb status not changed")
 
     return rsp
 
-@application.route('/api/forum/click_thumb/resp/<resp_id>/user_id/<user_id>', methods=["POST"])
-def thumbs_response(resp_id, user_id):
-    result = ForumPostResource.click_thumb_response(resp_id, user_id)
+@application.route('/api/forum/resp/<resp_id>/thumb/user/<user_id>', methods=["POST"])
+def thumbs_response(user_id, resp_id):
+    result = ForumPostResource.click_thumb_response(user_id, resp_id)
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        print("Response thumb status changed")
     else:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
+        print("Response thumb status not changed")
 
     return rsp
 
