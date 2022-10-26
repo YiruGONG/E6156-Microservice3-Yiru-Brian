@@ -155,6 +155,17 @@ def forum(user_id):
 
     return rsp
 
+@application.route('/api/forum/example/<var1>/<var2>', methods=["GET"])
+def forum_example(var1, var2):
+    result = ForumPostResource.get_example(var1, var2)
+
+    if result['success']:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+
+    return rsp
+
 @application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
     result = ForumPostResource.get_posts_by_label(user_id, cat)
@@ -201,10 +212,10 @@ def forum_mypost(user_id):
 def add_post(user_id):
     if request.method == 'POST':
         post_res = ForumPostResource.add_post(user_id,
-                                              str(request.get_json()['title']),
-                                              str(request.get_json()['location']),
-                                              str(request.get_json()['label']),
-                                              str(request.get_json()['content']))
+                                              str(request.get_json()["title"]),
+                                              str(request.get_json()["location"]),
+                                              str(request.get_json()["label"]),
+                                              str(request.get_json()["content"]))
         if post_res['success']:
             res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
