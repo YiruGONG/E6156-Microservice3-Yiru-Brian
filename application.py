@@ -212,7 +212,7 @@ def forum_mypost(user_id):
 def add_post(user_id):
     if request.method == 'POST':
         post_res = ForumPostResource.add_post(user_id,
-                                              # 0,
+                                              0,
                                               str(request.get_json()["title"]),
                                               str(request.get_json()["location"]),
                                               str(request.get_json()["label"]),
@@ -306,7 +306,6 @@ def edit_post(user_id, post_id):
         new_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
         if new_post_response["post"]["success"]:
             new_post = new_post_response["post"]["post_data"][0]
-            print(new_post)
             print("Post added/edited")
         else:
             return Response("Original post deleted but the new post is not found. Method failed.", status=400, content_type="text/plain")

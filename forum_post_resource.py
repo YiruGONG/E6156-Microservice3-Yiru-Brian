@@ -164,6 +164,30 @@ class ForumPostResource:
 
         return {"post": post, "response": response}
 
+    def get_resp_by_id(user_id, resp_id):
+
+        conn = ForumPostResource._get_connection()
+
+        sql = """
+            SELECT R.*
+            FROM ms3.Response R
+            WHERE R.Response_ID = %s;
+        """
+        cur = conn.cursor()
+        try:
+            cur.execute(sql, resp_id)
+            res = cur.fetchall()
+            if res:
+                response = {'success': True, 'resp_data': res}
+            else:
+                response = {'success': False, 'message': 'Not Found', 'resp_data': res}
+        except pymysql.Error as e:
+            print(e)
+            response = {'success': False, 'message': str(e)}
+            return response
+
+        return response
+
     def get_my_posts(user_id):
 
         conn = ForumPostResource._get_connection()
@@ -273,11 +297,10 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
-    def add_response(user_id, post_id, content):
+    def add_response(user_id, resp_id, post_id, content):
         t = str(datetime.now())
         sql_query_post = "SELECT Title FROM ms3.Post WHERE Post_ID = %s;"
         sql_query_resp = "SELECT COUNT(Response_ID) FROM ms3.Response WHERE Post_ID = %s;"
-        sql_insert = "INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, %s, %s);"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
@@ -296,7 +319,13 @@ class ForumPostResource:
         try:
             cur.execute(sql_query_resp, post_id)
             key, val1 = next(iter(cur.fetchone().items()))
-            cur.execute(sql_insert, args=(post_id, user_id, t, content))
+            if resp_id == 0:
+                cur.execute("INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, %s, %s);",
+                            args=(post_id, user_id, t, content))
+            else:
+                cur.execute(
+                    "INSERT INTO ms3.Response (Response_ID, Post_ID, User_ID, Time, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s);",
+                    args=(resp_id, post_id, user_id, t, content, 1))
             cur.execute(sql_query_resp, post_id)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
