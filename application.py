@@ -231,6 +231,7 @@ def add_post(user_id):
 def add_response(user_id, post_id):
     if request.method == 'POST':
         resp_res = ForumPostResource.add_response(user_id,
+                                                  0,
                                                   post_id,
                                                   str(request.get_json()['content']))
         if resp_res['response']['success']:
@@ -270,18 +271,22 @@ def edit_post(user_id, post_id):
         if get_post_response["post"]["success"]:
             get_post = get_post_response["post"]["post_data"][0]
             print("Post exists and could be fetched")
-            return Response(json.dumps(get_post, cls=DTEncoder), status=200, content_type="application.json")
+            rsp = Response(json.dumps(get_post, cls=DTEncoder), status=200, content_type="application.json")
         else:
             print("Post does not exists and could not be edited")
-            return Response("Post does not exists and could not fetched", status=404, content_type="text/plain")
+            rsp = Response("Post does not exists and could not fetched", status=200, content_type="text/plain")
     else:
         ori_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
         if ori_post_response["post"]["success"]:
             ori_post = ori_post_response["post"]["post_data"][0]
-            print("Post exists and about to be edited")
+            if str(ori_post["User_ID"]) == user_id:
+                print("Post exists and about to be edited")
+            else:
+                print("Post exists but it cannot be edited by this user")
+                return Response("Post exists but the current user cannot edit it.", status=200, content_type="text/plain")
         else:
-            return Response("Post not found.", status=404, content_type="text/plain")
-        # delete_post = ForumPostResource.post_delete(post_id)
+            print("Post does not exist and no one can edit it")
+            return Response("Post not found.", status=200, content_type="text/plain")
         ForumPostResource.post_delete(post_id)
         add_post = ForumPostResource.add_post(user_id,
                                               post_id,
@@ -290,15 +295,55 @@ def edit_post(user_id, post_id):
                                               str(request.get_json()['label']),
                                               str(request.get_json()['content']))
         new_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
-        if ori_post_response["post"]["success"]:
+        if new_post_response["post"]["success"]:
             new_post = new_post_response["post"]["post_data"][0]
             print("Post added/edited")
         else:
-            return Response("Original post deleted but the new post is not found. Method failed.", status=404, content_type="text/plain")
+            return Response("Original post deleted but the new post is not found. Method failed.", status=400, content_type="text/plain")
         if (ori_post["Title"] == new_post["Title"]) & (ori_post["Location_ID"] == new_post["Location_ID"]) & (ori_post["Label"] == new_post["Label"]) & (ori_post["Content"] == new_post["Content"]):
             rsp = Response("Post unedited.", status=200, content_type="text/plain")
         else:
             rsp = Response(json.dumps(add_post, cls=DTEncoder), status=200, content_type="application.json")
+    return rsp
+
+@application.route('/api/forum/resp/<resp_id>/edit/user_id/<user_id>', methods=["GET", "POST"])
+def edit_response(user_id, resp_id):
+    if request.method == 'GET':
+        get_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
+        if get_response["success"]:
+            response = get_response["resp_data"][0]
+            print("Response exists and could be fetched")
+            rsp = Response(json.dumps(response, cls=DTEncoder), status=200, content_type="application.json")
+        else:
+            print("Response does not exists and cannot be edited")
+            rsp = Response("Response does not exists and could not fetched", status=200, content_type="text/plain")
+    else:
+        get_ori_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
+        if get_ori_response["success"]:
+            ori_response = get_ori_response["resp_data"][0]
+            if str(ori_response["User_ID"]) == user_id:
+                print("Response exists and about to be edited")
+            else:
+                print("Response exists but it cannot be edited by this user")
+                return Response("Response exists but the current user cannot edit it.", status=200, content_type="text/plain")
+        else:
+            print("Response does not exist and no one can edit it")
+            return Response("Response not found.", status=200, content_type="text/plain")
+        ForumPostResource.resp_delete(resp_id)
+        add_resp = ForumPostResource.add_response(user_id,
+                                                  resp_id,
+                                                  ori_response["Post_ID"],
+                                                  str(request.get_json()['content']))
+        get_new_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
+        if get_new_response["success"]:
+            new_response = get_new_response["resp_data"][0]
+            print("Response added/edited")
+        else:
+            return Response("Original response deleted but the new response is not found. Method failed.", status=400, content_type="text/plain")
+        if ori_response["Content"] == new_response["Content"]:
+            rsp = Response("Response unedited.", status=200, content_type="text/plain")
+        else:
+            rsp = Response(json.dumps(add_resp, cls=DTEncoder), status=200, content_type="application.json")
     return rsp
 
 @application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
