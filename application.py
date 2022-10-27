@@ -182,7 +182,7 @@ def forum_cat(user_id, cat):
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
 def post_details(user_id, post_id):
 
-    result = ForumPostResource.get_posts_by_id(user_id, post_id)
+    result = ForumPostResource.get_post_by_id(user_id, post_id)
 
     if result['post']['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
@@ -212,6 +212,7 @@ def forum_mypost(user_id):
 def add_post(user_id):
     if request.method == 'POST':
         post_res = ForumPostResource.add_post(user_id,
+                                              0,
                                               str(request.get_json()["title"]),
                                               str(request.get_json()["location"]),
                                               str(request.get_json()["label"]),
@@ -260,6 +261,44 @@ def thumbs_response(user_id, resp_id):
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
         print("Response thumb status not changed")
 
+    return rsp
+
+@application.route('/api/forum/post/<post_id>/edit/user_id/<user_id>', methods=["GET", "POST"])
+def edit_post(user_id, post_id):
+    if request.method == 'GET':
+        get_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
+        if get_post_response["post"]["success"]:
+            get_post = get_post_response["post"]["post_data"][0]
+            print("Post exists and could be fetched")
+            return Response(json.dumps(get_post, cls=DTEncoder), status=200, content_type="application.json")
+        else:
+            print("Post does not exists and could not be edited")
+            return Response("Post does not exists and could not fetched", status=404, content_type="text/plain")
+    else:
+        ori_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
+        if ori_post_response["post"]["success"]:
+            ori_post = ori_post_response["post"]["post_data"][0]
+            print("Post exists and about to be edited")
+        else:
+            return Response("Post not found.", status=404, content_type="text/plain")
+        # delete_post = ForumPostResource.post_delete(post_id)
+        ForumPostResource.post_delete(post_id)
+        add_post = ForumPostResource.add_post(user_id,
+                                              post_id,
+                                              str(request.get_json()['title']),
+                                              str(request.get_json()['location']),
+                                              str(request.get_json()['label']),
+                                              str(request.get_json()['content']))
+        new_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
+        if ori_post_response["post"]["success"]:
+            new_post = new_post_response["post"]["post_data"][0]
+            print("Post added/edited")
+        else:
+            return Response("Original post deleted but the new post is not found. Method failed.", status=404, content_type="text/plain")
+        if (ori_post["Title"] == new_post["Title"]) & (ori_post["Location_ID"] == new_post["Location_ID"]) & (ori_post["Label"] == new_post["Label"]) & (ori_post["Content"] == new_post["Content"]):
+            rsp = Response("Post unedited.", status=200, content_type="text/plain")
+        else:
+            rsp = Response(json.dumps(add_post, cls=DTEncoder), status=200, content_type="application.json")
     return rsp
 
 @application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
