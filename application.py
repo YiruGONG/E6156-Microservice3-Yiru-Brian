@@ -182,7 +182,7 @@ def forum_cat(user_id, cat):
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
 def post_details(user_id, post_id):
 
-    result = ForumPostResource.get_post_by_id(user_id, post_id)
+    result = ForumPostResource.get_posts_by_id(user_id, post_id)
 
     if result['post']['success']:
         rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
@@ -212,7 +212,7 @@ def forum_mypost(user_id):
 def add_post(user_id):
     if request.method == 'POST':
         post_res = ForumPostResource.add_post(user_id,
-                                              0,
+                                              # 0,
                                               str(request.get_json()["title"]),
                                               str(request.get_json()["location"]),
                                               str(request.get_json()["label"]),
@@ -238,6 +238,8 @@ def add_response(user_id, post_id):
             res = {'success': True, 'message': 'response successfully added', 'details': resp_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
             print("Response added")
+        else:
+            rsp = Response(json.dumps(resp_res), status=200, content_type="application.json")
     else:
         rsp = Response("Method failed", status=404, content_type="text/plain")
         print("Response not added")
@@ -362,7 +364,7 @@ def delete_post(post_id):
 
     return rsp
 
-@application.route('/api/forum//resp/delete/<resp_id>/', methods=["GET"])
+@application.route('/api/forum/resp/delete/<resp_id>/', methods=["GET"])
 def delete_resp(resp_id):
     result = ForumPostResource.resp_delete(resp_id)
     if result['success']:
