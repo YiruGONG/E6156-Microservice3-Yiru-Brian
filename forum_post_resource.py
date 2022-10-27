@@ -45,14 +45,14 @@ class ForumPostResource:
                 label = [i for i in label if i is not None]
                 result = {'success': True, 'data': res, 'labels': label}
             else:
-                result = {'success':False, 'message':'Not Found','data':res}
+                result = {'success': False, 'message': 'Not Found', 'data': res}
         except pymysql.Error as e:
             print(e)
-            result = {'success':False, 'message':str(e)}
+            result = {'success': False, 'message': str(e)}
         return result
 
     def get_posts_by_label(user_id, label):
-        ## return posts
+        ## return posts under a subcategory
         sql1 = """
             SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
                 if(U.Post_ID is null, false, true) AS is_Thumbed
@@ -112,7 +112,7 @@ class ForumPostResource:
             response = {'success': False, 'message': str(e)}
         return {"post": post, "response": response}
 
-    def get_posts_by_id(user_id, post_id):
+    def get_post_by_id(user_id, post_id):
 
         conn = ForumPostResource._get_connection()
 
@@ -128,13 +128,13 @@ class ForumPostResource:
             """
         cur = conn.cursor()
         try:
-            cur.execute(sql1 % (user_id, post_id))
+            cur.execute(sql1, args=(user_id, post_id))
             # if success
             res = cur.fetchall()
             if res:
-                post = {'success': True, 'data': res}
+                post = {'success': True, 'post_data': res}
             else:
-                post = {'success': False, 'message': 'Not Found', 'data': res}
+                post = {'success': False, 'message': 'Not Found', 'post_data': res}
         except pymysql.Error as e:
             print(e)
             post = {'success': False, 'message': str(e)}
@@ -150,13 +150,13 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql2 % (user_id, post_id))
+            cur.execute(sql2, args=(user_id, post_id))
             # if success
             res = cur.fetchall()
             if res:
-                response = {'success': True, 'data': res}
+                response = {'success': True, 'resp_data': res}
             else:
-                response = {'success': False, 'message': 'Not Found', 'data': res}
+                response = {'success': False, 'message': 'Not Found', 'resp_data': res}
         except pymysql.Error as e:
             print(e)
             response = {'success': False, 'message': str(e)}
@@ -185,7 +185,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql1 % (user_id, user_id))
+            cur.execute(sql1, args=(user_id, user_id))
             # if success
             res = cur.fetchall()
             if res:
@@ -217,7 +217,7 @@ class ForumPostResource:
         """
         cur = conn.cursor()
         try:
-            cur.execute(sql2 % (user_id, user_id))
+            cur.execute(sql2, args=(user_id, user_id))
             # if success
             res = cur.fetchall()
             if res:
@@ -230,7 +230,7 @@ class ForumPostResource:
 
         return {"post": post, "response": response}
 
-    def add_post(user_id, title, location, label, content):
+    def add_post(user_id, post_id, title, location, label, content):
         t = str(datetime.now())
         sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
         conn = ForumPostResource._get_connection()
@@ -238,20 +238,36 @@ class ForumPostResource:
         try:
             cur.execute(sql_query)
             key, val1 = next(iter(cur.fetchone().items()))
-            if location == 'None' and label == 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Content) VALUES (\'%s\', %s, \'%s\', \'%s\';" % (title, user_id, t, content))
-            elif location == 'None' and label != 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Label, Content) VALUES (\'%s\', %s, \'%s\', \'%s\', \'%s\');" % (title, user_id, t, label, content))
-            elif location != 'None' and label == 'None':
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Content) VALUES (\'%s\', %s, \'%s\', %d, \'%s\');" % (title, user_id, t, int(location), content))
+            if post_id == 0:
+                if location == 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Content) VALUES (%s, %s, %s, %s);", args=(title, user_id, t, content))
+                elif location == 'None' and label != 'None':
+                    cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Label, Content) VALUES (%s, %s, %s, %s, %s);", args=(title, user_id, t, label, content))
+                elif location != 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Content) VALUES (%s, %s, %s, %s, %s);", args=(title, user_id, t, location, content))
+                else:
+                    cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Label, Content) VALUES (%s, %s, %s, %s, %s, %s);", args=(title, user_id, t, location, label, content))
             else:
-                cur.execute("INSERT INTO ms3.Post (Title, User_ID, Time, Location_ID, Label, Content) VALUES (\'%s\', %s, \'%s\', %d, \'%s\', \'%s\');" % (title, user_id, t, int(location), label, content))
+                if location == 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s);", args=(post_id, title, user_id, t, content, 1))
+                elif location == 'None' and label != 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Label, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s, %s);", args=(post_id, title, user_id, t, label, content, 1))
+                elif location != 'None' and label == 'None':
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s, %s);", args=(post_id, title, user_id, t, location, content, 1))
+                else:
+                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Label, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", args=(post_id, title, user_id, t, location, label, content, 1))
             cur.execute(sql_query)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
-                result = {'success': True, 'message': 'post added'}
+                if post_id == 0:
+                    result = {'success': True, 'message': 'post added'}
+                else:
+                    result = {'success': True, 'message': 'post edited'}
             else:
-                result = {'success': False, 'message': 'post not added'}
+                if post_id == 0:
+                    result = {'success': False, 'message': 'post not added'}
+                else:
+                    result = {'success': False, 'message': 'post not edited'}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}
@@ -264,102 +280,76 @@ class ForumPostResource:
         sql_insert = "INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, %s, %s);"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
-
         try:
-            cur.execute(sql_query_post % post_id)
+            cur.execute(sql_query_post, post_id)
             res = cur.fetchall()
             if res:
                 post_result = {'success': True, 'message': 'post found'}
+                print("first success")
             else:
                 post_result = {'success': False, 'message': 'post not found, cannot add response'}
+                print("first fail")
         except pymysql.Error as e:
             print(e)
             post_result = {'success': False, 'message': str(e)}
 
         try:
-            cur.execute(sql_query_resp % post_id)
+            cur.execute(sql_query_resp, post_id)
             key, val1 = next(iter(cur.fetchone().items()))
             cur.execute(sql_insert, args=(post_id, user_id, t, content))
             cur.execute(sql_query_resp, post_id)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
-                resp_result = {'success': True, 'message': 'response added to post'}
+                if resp_id == 0:
+                    resp_result = {'success': True, 'message': 'response added to post'}
+                    print("success adding response")
+                else:
+                    resp_result = {'success': True, 'message': 'response edited'}
+                    print("success editing response")
             else:
-                resp_result = {'success': False, 'message': 'post found but response not added'}
+                if resp_id == 0:
+                    resp_result = {'success': False, 'message': 'post found but response not added'}
+                    print("response not added")
+                else:
+                    resp_result = {'success': False, 'message': 'response not edited'}
+                    print("response not edited")
         except pymysql.Error as e:
             print(e)
             resp_result = {'success': False, 'message': str(e)}
 
         return {'post': post_result, 'response': resp_result}
 
-    def update_response(user_id, response_id, content):
-        ori_entry = {
-            "Post_ID": 5,
-            "Title": "first new post via postman again",
-            "User_ID": "Yiru Gong",
-            "Time": "2022-10-24 16:31:45",
-            "Location_ID": 2,
-            "Label": "Others",
-            "Content": "edit post api testing again",
-            "Edited": 0,
-            "Thumbs": 0,
-            "is_Thumbed": 0
-        }
-        # ori_entry = obj.get_post_by_id(user_id, post_id)["post"]["post_data"][0]
-        print("ori_entry received")
-        # for item in ["Title", "Location_ID", "Label", "Content"]:
-        #     print(ori_entry[item], type(ori_entry[item]))
-        # print(title, type(title), location, type(location), label, type(label), content, type(content))
-        if ori_entry["Title"] == title and ori_entry["Location_ID"] == int(location) and ori_entry["Label"] == label and ori_entry['Content'] == content:
-            result = {'success': False, 'message': 'post unedited'}
-            return result
-        else:
-            t = str(datetime.now())
-            sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
-            conn = ForumPostResource._get_connection()
-            cur = conn.cursor()
-            try:
-                cur.execute(sql_query)
-                key, val1 = next(iter(cur.fetchone().items()))
-                cur.execute("DELETE FROM ms3.Post WHERE Post_ID = %s" % post_id)
-                if location == 'None' and label == 'None':
-                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, content, 1))
-                elif location == 'None' and label != 'None':
-                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, label, content, 1))
-                elif location != 'None' and label == 'None':
-                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, content, 1))
-                else:
-                    cur.execute("INSERT INTO ms3.Post (Post_ID, Title, User_ID, Time, Location_ID, Label, Content, Edited) VALUES (%s, \'%s\', %s, \'%s\', \'%s\', \'%s\', \'%s\', %s);" % (post_id, title, user_id, t, location, label, content, 1))
-                cur.execute(sql_query)
-                key, val2 = next(iter(cur.fetchone().items()))
-                if val2 == val1:
-                    result = {'success': True, 'message': 'post edited'}
-                else:
-                    result = {'success': False, 'message': 'post not edited'}
-            except pymysql.Error as e:
-                print(e)
-                result = {'success': False, 'message': str(e)}
-            return result
-
     def post_delete(post_id):
-        sql = "DELETE FROM ms3.Post WHERE post_id = %s"
+        sql_query = "SELECT Post_ID FROM ms3.Post WHERE Post_ID = %s"
+        sql_delete = "DELETE FROM ms3.Post WHERE post_id = %s"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
-            cur.execute(sql, post_id)
-            result = {'success': True, 'message': 'Post deleted successfully'}
+            cur.execute(sql_query, post_id)
+            res = cur.fetchall()
+            if res:
+                cur.execute(sql_delete, post_id)
+                result = {'success': True, 'message': 'Post deleted successfully'}
+            else:
+                result = {'success': False, 'message': 'Post not found'}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}
         return result
 
     def resp_delete(resp_id):
-        sql = "DELETE FROM ms3.Response WHERE response_id = %s"
+        sql_query = "SELECT Response_ID FROM ms3.Response WHERE Response_ID = %s"
+        sql_delete = "DELETE FROM ms3.Response WHERE Response_ID = %s"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
-            cur.execute(sql, resp_id)
-            result = {'success': True, 'message': 'Response deleted successfully'}
+            cur.execute(sql_query, resp_id)
+            res = cur.fetchall()
+            if res:
+                cur.execute(sql_delete, resp_id)
+                result = {'success': True, 'message': 'Response deleted successfully'}
+            else:
+                result = {'success': False, 'message': 'Response not found'}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}
