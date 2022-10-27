@@ -279,6 +279,7 @@ def edit_post(user_id, post_id):
         ori_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
         if ori_post_response["post"]["success"]:
             ori_post = ori_post_response["post"]["post_data"][0]
+            print(ori_post)
             if str(ori_post["User_ID"]) == user_id:
                 print("Post exists and about to be edited")
             else:
@@ -287,23 +288,30 @@ def edit_post(user_id, post_id):
         else:
             print("Post does not exist and no one can edit it")
             return Response("Post not found.", status=200, content_type="text/plain")
-        ForumPostResource.post_delete(post_id)
-        add_post = ForumPostResource.add_post(user_id,
-                                              post_id,
-                                              str(request.get_json()['title']),
-                                              str(request.get_json()['location']),
-                                              str(request.get_json()['label']),
-                                              str(request.get_json()['content']))
+        up_post = ForumPostResource.update_post(user_id,
+                                                post_id,
+                                                str(request.get_json()['title']),
+                                                str(request.get_json()['location']),
+                                                str(request.get_json()['label']),
+                                                str(request.get_json()['content']))
+        # ForumPostResource.post_delete(post_id)
+        # add_post = ForumPostResource.add_post(user_id,
+        #                                       post_id,
+        #                                       str(request.get_json()['title']),
+        #                                       str(request.get_json()['location']),
+        #                                       str(request.get_json()['label']),
+        #                                       str(request.get_json()['content']))
         new_post_response = ForumPostResource.get_post_by_id(user_id, post_id)
         if new_post_response["post"]["success"]:
             new_post = new_post_response["post"]["post_data"][0]
+            print(new_post)
             print("Post added/edited")
         else:
             return Response("Original post deleted but the new post is not found. Method failed.", status=400, content_type="text/plain")
         if (ori_post["Title"] == new_post["Title"]) & (ori_post["Location_ID"] == new_post["Location_ID"]) & (ori_post["Label"] == new_post["Label"]) & (ori_post["Content"] == new_post["Content"]):
             rsp = Response("Post unedited.", status=200, content_type="text/plain")
         else:
-            rsp = Response(json.dumps(add_post, cls=DTEncoder), status=200, content_type="application.json")
+            rsp = Response(json.dumps(up_post, cls=DTEncoder), status=200, content_type="application.json")
     return rsp
 
 @application.route('/api/forum/resp/<resp_id>/edit/user_id/<user_id>', methods=["GET", "POST"])
@@ -329,11 +337,9 @@ def edit_response(user_id, resp_id):
         else:
             print("Response does not exist and no one can edit it")
             return Response("Response not found.", status=200, content_type="text/plain")
-        ForumPostResource.resp_delete(resp_id)
-        add_resp = ForumPostResource.add_response(user_id,
-                                                  resp_id,
-                                                  ori_response["Post_ID"],
-                                                  str(request.get_json()['content']))
+        up_resp = ForumPostResource.update_response(user_id,
+                                                    resp_id,
+                                                    str(request.get_json()['content']))
         get_new_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
         if get_new_response["success"]:
             new_response = get_new_response["resp_data"][0]
@@ -343,7 +349,7 @@ def edit_response(user_id, resp_id):
         if ori_response["Content"] == new_response["Content"]:
             rsp = Response("Response unedited.", status=200, content_type="text/plain")
         else:
-            rsp = Response(json.dumps(add_resp, cls=DTEncoder), status=200, content_type="application.json")
+            rsp = Response(json.dumps(up_resp, cls=DTEncoder), status=200, content_type="application.json")
     return rsp
 
 @application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
