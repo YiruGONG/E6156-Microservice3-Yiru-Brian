@@ -355,6 +355,7 @@ class ForumPostResource:
             print("Post exists but it cannot be edited by this user")
             return {'success': False, 'message': "Post exists but the current user cannot edit it."}
 
+        if label == 'None': label = 4
         label_cat = ('*Blank*', 'Administrative', 'Lost and Found', 'Call for Partners', 'Others')
         if (title == ori_title) & (location == str(ori_location)) & (label_cat[int(label)] == ori_label) & (content == ori_content):
             print("Post exists, edit received, but this update does not edit the post.")
@@ -364,32 +365,18 @@ class ForumPostResource:
             conn = ForumPostResource._get_connection()
             cur = conn.cursor()
             try:
-                if location == 'None' and label == 'None':
-                    sql = """
-                        UPDATE ms3.Post
-                        SET Title = %s, Location_ID = NULL, Label = NULL, Content = %s, Time = %s, Edited = 1
-                        WHERE Post_ID = %s AND User_ID = %s;
-                    """
-                    cur.execute(sql, args=(title, content, t, post_id, user_id))
-                elif location == 'None' and label != 'None':
+                if location == 'None':
                     sql = """
                         UPDATE ms3.Post
                         SET Title = %s, Location_ID = NULL, Label = %s, Content = %s, Time = %s, Edited = 1
-                        WHERE Post_ID = %s AND User_ID = %s
+                        WHERE Post_ID = %s AND User_ID = %s;
                     """
                     cur.execute(sql, args=(title, label, content, t, post_id, user_id))
-                elif location != 'None' and label == 'None':
-                    sql = """
-                        UPDATE ms3.Post
-                        SET Title = %s, Location_ID = %s, Label = NULL, Content = %s, Time = %s, Edited = 1
-                        WHERE Post_ID = %s AND User_ID = %s
-                    """
-                    cur.execute(sql, args=(title, location, content, t, post_id, user_id))
                 else:
                     sql = """
                         UPDATE ms3.Post
                         SET Title = %s, Location_ID = %s, Label = %s, Content = %s, Time = %s, Edited = 1
-                        WHERE Post_ID = %s AND User_ID = %s
+                        WHERE Post_ID = %s AND User_ID = %s;
                     """
                     cur.execute(sql, args=(title, location, label, content, t, post_id, user_id))
                 print("Post exists, edit received, and this update edited the post.")
