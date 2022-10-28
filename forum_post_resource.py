@@ -67,6 +67,8 @@ class ForumPostResource:
             WHERE P.Label = %s
             GROUP BY P.Post_id;
         """
+        label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
+        label = label_dict[label]
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
@@ -81,24 +83,45 @@ class ForumPostResource:
             post = {'success': False, 'message': str(e)}
 
         ## return responses
+        # sql2 = """
+        #     SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+        #         if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
+        #     FROM ms3.Response R
+        #         LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+        #         LEFT JOIN (
+        #             SELECT Response_ID, User_ID
+        #             FROM ms3.Response_Thumbs
+        #             WHERE User_ID = %s
+        #         ) U ON R.Response_ID = U.Response_ID
+        #         LEFT JOIN (
+        #             SELECT Post_ID, Label
+        #             FROM ms3.Post
+        #             WHERE Label = %s
+        #         ) L ON R.Post_ID = L.Post_ID
+        #     GROUP BY R.Response_ID
+        #     HAVING correct_Label = TRUE;
+        # """
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
-                if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
-            FROM ms3.Response R
-                LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-                LEFT JOIN (
-                    SELECT Response_ID, User_ID
-                    FROM ms3.Response_Thumbs
-                    WHERE User_ID = %s
-                ) U ON R.Response_ID = U.Response_ID
-                LEFT JOIN (
-                    SELECT Post_ID, Label
-                    FROM ms3.Post
-                    WHERE Label = %s
-                ) L ON R.Post_ID = L.Post_ID
-            GROUP BY R.Response_ID
-            HAVING correct_Label = TRUE;
-        """
+                    SELECT * 
+                    FROM (    
+                        SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, 
+                            if(U.Response_ID is null, false, true) AS is_Thumbed
+                        FROM ms3.Response R
+                            LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+                            LEFT JOIN (
+                                SELECT Response_ID, User_ID
+                                FROM ms3.Response_Thumbs
+                                WHERE User_ID = %s
+                            ) U ON R.Response_ID = U.Response_ID
+                            RIGHT JOIN (
+                                SELECT Post_ID, Label
+                                FROM ms3.Post
+                                WHERE Label = %s
+                            ) L ON R.Post_ID = L.Post_ID
+                        GROUP BY R.Response_ID
+                    ) A
+                    WHERE Response_ID IS NOT NULL;
+                """
         cur = conn.cursor()
         try:
             cur.execute(sql2, args=(user_id, label))
@@ -221,24 +244,44 @@ class ForumPostResource:
             post = {'success': False, 'message': str(e)}
 
         ## return responses
+        # sql2 = """
+        #     SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+        #         if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
+        #     FROM ms3.Response R
+        #         LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+        #         LEFT JOIN (
+        #             SELECT Response_ID, User_ID
+        #             FROM ms3.Response_Thumbs
+        #             WHERE User_ID = %s
+        #         ) U ON R.Response_ID = U.Response_ID
+        #         LEFT JOIN (
+        #             SELECT Post_ID, User_ID
+        #             FROM ms3.Post
+        #             WHERE User_ID = %s
+        #         ) L ON R.Post_ID = L.Post_ID
+        #     GROUP BY R.Response_ID
+        #     HAVING mypost = TRUE;
+        # """
         sql2 = """
-            SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
-                if(U.Response_ID is null, false, true) AS is_Thumbed,  if(L.Post_ID is null, false, true) AS mypost
-            FROM ms3.Response R
-                LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-                LEFT JOIN (
-                    SELECT Response_ID, User_ID
-                    FROM ms3.Response_Thumbs
-                    WHERE User_ID = %s
-                ) U ON R.Response_ID = U.Response_ID
-                LEFT JOIN (
-                    SELECT Post_ID, User_ID
-                    FROM ms3.Post
-                    WHERE User_ID = %s
-                ) L ON R.Post_ID = L.Post_ID
-            GROUP BY R.Response_ID
-            HAVING mypost = TRUE;
-        """
+                    SELECT *
+                    FROM (    
+                        SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, if(U.Response_ID is null, false, true) AS is_Thumbed
+                        FROM ms3.Response R
+                            LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+                            LEFT JOIN (
+                                SELECT Response_ID, User_ID
+                                FROM ms3.Response_Thumbs
+                                WHERE User_ID = %s
+                            ) U ON R.Response_ID = U.Response_ID
+                            RIGHT JOIN (
+                                SELECT Post_ID, User_ID
+                                FROM ms3.Post
+                                WHERE User_ID = %s
+                            ) L ON R.Post_ID = L.Post_ID
+                        GROUP BY R.Response_ID
+                    ) A
+                    WHERE REsponse_ID IS NOT NULL;
+                """
         cur = conn.cursor()
         try:
             cur.execute(sql2, args=(user_id, user_id))
@@ -320,12 +363,9 @@ class ForumPostResource:
             cur.execute(sql_query_resp, post_id)
             key, val1 = next(iter(cur.fetchone().items()))
             if resp_id == 0:
-                cur.execute("INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, %s, %s);",
-                            args=(post_id, user_id, t, content))
+                cur.execute("INSERT INTO ms3.Response (Post_ID, User_ID, Time, Content) VALUES (%s, %s, %s, %s);", args=(post_id, user_id, t, content))
             else:
-                cur.execute(
-                    "INSERT INTO ms3.Response (Response_ID, Post_ID, User_ID, Time, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s);",
-                    args=(resp_id, post_id, user_id, t, content, 1))
+                cur.execute("INSERT INTO ms3.Response (Response_ID, Post_ID, User_ID, Time, Content, Edited) VALUES (%s, %s, %s, %s, %s, %s);", args=(resp_id, post_id, user_id, t, content, 1))
             cur.execute(sql_query_resp, post_id)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
@@ -355,9 +395,12 @@ class ForumPostResource:
             print("Post exists but it cannot be edited by this user")
             return {'success': False, 'message': "Post exists but the current user cannot edit it."}
 
-        if label == 'None': label = 4
-        label_cat = ('*Blank*', 'Administrative', 'Lost and Found', 'Call for Partners', 'Others')
-        if (title == ori_title) & (location == str(ori_location)) & (label_cat[int(label)] == ori_label) & (content == ori_content):
+        if label == "None":
+            label = 'Others'
+        elif str.isdigit(label):
+            label_cat = ('-', 'Administrative', 'Lost and Found', 'Call for Partners', 'Others')
+            label = label_cat[int(label)]
+        if (title == ori_title) & (location == str(ori_location)) & (label == ori_label) & (content == ori_content):
             print("Post exists, edit received, but this update does not edit the post.")
             rsp = {'success': True, 'message': "New input is similar to the original and post is unedited in this attempt."}
         else:

@@ -120,7 +120,7 @@ welcome = """
     <p>This environment is launched with Elastic Beanstalk Python Platform</p>
     <p>Test for Yiru, Brain use</p>
   </div>
-  
+
   <div class="linksColumn"> 
     <h2>What's Next?</h2>
     <ul>
@@ -140,31 +140,23 @@ welcome = """
 application = Flask(__name__)
 CORS(application)
 
+
 @application.route('/')
 def hello_message():
     return welcome
+
 
 @application.route('/api/forum/user_id/<user_id>', methods=["GET"])
 def forum(user_id):
     result = ForumPostResource.get_all_posts(user_id)
 
     if result['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
-
-    return rsp
-
-@application.route('/api/forum/example/<var1>/<var2>', methods=["GET"])
-def forum_example(var1, var2):
-    result = ForumPostResource.get_example(var1, var2)
-
-    if result['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
     return rsp
+
 
 @application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
@@ -179,34 +171,35 @@ def forum_cat(user_id, cat):
 
     return rsp
 
+
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
 def post_details(user_id, post_id):
-
     result = ForumPostResource.get_post_by_id(user_id, post_id)
 
     if result['post']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     elif result['response']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     else:
         rsp = Response("NOT FOUND TEST", status=404, content_type="text/plain")
 
     return rsp
 
+
 @application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
 def forum_mypost(user_id):
-
     result = ForumPostResource.get_my_posts(user_id)
 
     if result['post']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     elif result['response']['success']:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
     else:
-        rsp = Response(json.dumps(result,cls=DTEncoder), status=200, content_type="application.json")
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
         # rsp = Response("Method Failed", status=404, content_type="text/plain")
 
     return rsp
+
 
 @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
 def add_post(user_id):
@@ -227,6 +220,7 @@ def add_post(user_id):
 
     return rsp
 
+
 @application.route('/api/forum/post/<post_id>/newresponse/user_id/<user_id>', methods=["POST"])
 def add_response(user_id, post_id):
     if request.method == 'POST':
@@ -245,6 +239,7 @@ def add_response(user_id, post_id):
         print("Response not added")
     return rsp
 
+
 @application.route('/api/forum/post/<post_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_post(user_id, post_id):
     result = ForumPostResource.click_thumb_post(post_id, user_id)
@@ -254,6 +249,7 @@ def thumbs_post(user_id, post_id):
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
 
     return rsp
+
 
 @application.route('/api/forum/resp/<resp_id>/thumb/user_id/<user_id>', methods=["GET"])
 def thumbs_response(user_id, resp_id):
@@ -265,6 +261,7 @@ def thumbs_response(user_id, resp_id):
         print("Response thumb status not changed")
 
     return rsp
+
 
 @application.route('/api/forum/post/<post_id>/edit/user_id/<user_id>', methods=["GET", "POST"])
 def edit_post(user_id, post_id):
@@ -300,6 +297,7 @@ def edit_post(user_id, post_id):
 
     return rsp
 
+
 @application.route('/api/forum/resp/<resp_id>/edit/user_id/<user_id>', methods=["GET", "POST"])
 def edit_response(user_id, resp_id):
     if request.method == 'GET':
@@ -327,6 +325,7 @@ def edit_response(user_id, resp_id):
             return Response("Response not found.", status=200, content_type="text/plain")
     return rsp
 
+
 @application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
 def delete_post(post_id):
     result = ForumPostResource.post_delete(post_id)
@@ -337,6 +336,7 @@ def delete_post(post_id):
 
     return rsp
 
+
 @application.route('/api/forum/resp/delete/<resp_id>/', methods=["GET"])
 def delete_resp(resp_id):
     result = ForumPostResource.resp_delete(resp_id)
@@ -346,6 +346,7 @@ def delete_resp(resp_id):
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
 
     return rsp
+
 
 # def sort_post():
 #     # TO DO...
