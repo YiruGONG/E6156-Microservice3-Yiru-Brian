@@ -358,7 +358,7 @@ class ForumPostResource:
         label_cat = ('*Blank*', 'Administrative', 'Lost and Found', 'Call for Partners', 'Others')
         if (title == ori_title) & (location == str(ori_location)) & (label_cat[int(label)] == ori_label) & (content == ori_content):
             print("Post exists, edit received, but this update does not edit the post.")
-            rsp = {'success': True, 'message': "New input is similar to the original and post is unedited."}
+            rsp = {'success': True, 'message': "New input is similar to the original and post is unedited in this attempt."}
         else:
             t = str(datetime.now())
             conn = ForumPostResource._get_connection()
@@ -399,22 +399,31 @@ class ForumPostResource:
                 rsp = {'success': False, 'message': str(e)}
         return rsp
 
-    def update_response(user_id, resp_id, content):
-        t = str(datetime.now())
-        sql = """
-            UPDATE ms3.Response
-            SET Content = %s, Time = %s, Edited = 1
-            WHERE Response_ID = %s AND User_ID = %s
-        """
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(sql, args=(content, t, resp_id, user_id))
-            rsp = {"success": True, "message": "Response updated"}
-        except pymysql.Error as e:
-            print(e)
-            rsp = {'success': False, 'message': str(e)}
+    def update_response(user_id, resp_id, content, ori_user_id, ori_content):
+        if user_id == str(ori_user_id):
+            print("Response exists and about to be edited")
+        else:
+            print("Response exists but it cannot be edited by this user")
+            return {'success': False, 'message': "Response exists but the current user cannot edit it."}
 
+        if content == ori_content:
+            print("Response exists, edit received, but this update does not edit the response.")
+            rsp = {'success': True, 'message': "New input is similar to the original and response is unedited in this attempt."}
+        else:
+            t = str(datetime.now())
+            sql = """
+                UPDATE ms3.Response
+                SET Content = %s, Time = %s, Edited = 1
+                WHERE Response_ID = %s AND User_ID = %s
+            """
+            conn = ForumPostResource._get_connection()
+            cur = conn.cursor()
+            try:
+                cur.execute(sql, args=(content, t, resp_id, user_id))
+                rsp = {"success": True, "message": "Response updated"}
+            except pymysql.Error as e:
+                print(e)
+                rsp = {'success': False, 'message': str(e)}
         return rsp
 
     def post_delete(post_id):

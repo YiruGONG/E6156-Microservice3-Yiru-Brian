@@ -315,29 +315,16 @@ def edit_response(user_id, resp_id):
         get_ori_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
         if get_ori_response["success"]:
             ori_response = get_ori_response["resp_data"][0]
-            if str(ori_response["User_ID"]) == user_id:
-                print("Response exists and about to be edited")
-            else:
-                print("Response exists but it cannot be edited by this user")
-                return Response("Response exists but the current user cannot edit it.", status=200, content_type="text/plain")
+            up_response = ForumPostResource.update_response(user_id,
+                                                            resp_id,
+                                                            str(request.get_json()['content']),
+                                                            ori_response["User_ID"],
+                                                            ori_response["Content"])
+            print("Response exists and an attempt to edit has been made")
+            rsp = Response(json.dumps(up_response, cls=DTEncoder), status=200, content_type="application.json")
         else:
             print("Response does not exist and no one can edit it")
             return Response("Response not found.", status=200, content_type="text/plain")
-        ForumPostResource.resp_delete(resp_id)
-        add_resp = ForumPostResource.add_response(user_id,
-                                                  resp_id,
-                                                  ori_response["Post_ID"],
-                                                  str(request.get_json()['content']))
-        get_new_response = ForumPostResource.get_resp_by_id(user_id, resp_id)
-        if get_new_response["success"]:
-            new_response = get_new_response["resp_data"][0]
-            print("Response added/edited")
-        else:
-            return Response("Original response deleted but the new response is not found. Method failed.", status=400, content_type="text/plain")
-        if ori_response["Content"] == new_response["Content"]:
-            rsp = Response("Response unedited.", status=200, content_type="text/plain")
-        else:
-            rsp = Response(json.dumps(add_resp, cls=DTEncoder), status=200, content_type="application.json")
     return rsp
 
 @application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
