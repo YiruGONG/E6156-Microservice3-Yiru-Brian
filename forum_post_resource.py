@@ -348,45 +348,55 @@ class ForumPostResource:
 
         return {'post': post_result, 'response': resp_result}
 
-    def update_post(user_id, post_id, title, location, label, content):
-        t = str(datetime.now())
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        print(user_id, post_id, title, location, label, content)
-        try:
-            if location == 'None' and label == 'None':
-                sql = """
-                    UPDATE ms3.Post
-                    SET Title = %s, Location_ID = NULL, Label = NULL, Content = %s, Time = %s, Edited = 1
-                    WHERE Post_ID = %s AND User_ID = %s;
-                """
-                cur.execute(sql, args=(title, content, t, post_id, user_id))
-            elif location == 'None' and label != 'None':
-                sql = """
-                    UPDATE ms3.Post
-                    SET Title = %s, Location_ID = NULL, Label = %s, Content = %s, Time = %s, Edited = 1
-                    WHERE Post_ID = %s AND User_ID = %s
-                """
-                cur.execute(sql, args=(title, label, content, t, post_id, user_id))
-            elif location != 'None' and label == 'None':
-                sql = """
-                    UPDATE ms3.Post
-                    SET Title = %s, Location_ID = %s, Label = NULL, Content = %s, Time = %s, Edited = 1
-                    WHERE Post_ID = %s AND User_ID = %s
-                """
-                cur.execute(sql, args=(title, location, content, t, post_id, user_id))
-            else:
-                sql = """
-                    UPDATE ms3.Post
-                    SET Title = %s, Location_ID = %s, Label = %s, Content = %s, Time = %s, Edited = 1
-                    WHERE Post_ID = %s AND User_ID = %s
-                """
-                cur.execute(sql, args=(title, location, label, content, t, post_id, user_id))
-            rsp = {"success": True, "message": "Post updated"}
-        except pymysql.Error as e:
-            print(e)
-            rsp = {'success': False, 'message': str(e)}
+    def update_post(user_id, post_id, title, location, label, content, ori_user_id, ori_title, ori_location, ori_label, ori_content):
+        if user_id == str(ori_user_id):
+            print("Post exists and about to be edited")
+        else:
+            print("Post exists but it cannot be edited by this user")
+            return {'success': False, 'message': "Post exists but the current user cannot edit it."}
 
+        label_cat = ('*Blank*', 'Administrative', 'Lost and Found', 'Call for Partners', 'Others')
+        if (title == ori_title) & (location == str(ori_location)) & (label_cat[int(label)] == ori_label) & (content == ori_content):
+            print("Post exists, edit received, but this update does not edit the post.")
+            rsp = {'success': True, 'message': "New input is similar to the original and post is unedited."}
+        else:
+            t = str(datetime.now())
+            conn = ForumPostResource._get_connection()
+            cur = conn.cursor()
+            try:
+                if location == 'None' and label == 'None':
+                    sql = """
+                        UPDATE ms3.Post
+                        SET Title = %s, Location_ID = NULL, Label = NULL, Content = %s, Time = %s, Edited = 1
+                        WHERE Post_ID = %s AND User_ID = %s;
+                    """
+                    cur.execute(sql, args=(title, content, t, post_id, user_id))
+                elif location == 'None' and label != 'None':
+                    sql = """
+                        UPDATE ms3.Post
+                        SET Title = %s, Location_ID = NULL, Label = %s, Content = %s, Time = %s, Edited = 1
+                        WHERE Post_ID = %s AND User_ID = %s
+                    """
+                    cur.execute(sql, args=(title, label, content, t, post_id, user_id))
+                elif location != 'None' and label == 'None':
+                    sql = """
+                        UPDATE ms3.Post
+                        SET Title = %s, Location_ID = %s, Label = NULL, Content = %s, Time = %s, Edited = 1
+                        WHERE Post_ID = %s AND User_ID = %s
+                    """
+                    cur.execute(sql, args=(title, location, content, t, post_id, user_id))
+                else:
+                    sql = """
+                        UPDATE ms3.Post
+                        SET Title = %s, Location_ID = %s, Label = %s, Content = %s, Time = %s, Edited = 1
+                        WHERE Post_ID = %s AND User_ID = %s
+                    """
+                    cur.execute(sql, args=(title, location, label, content, t, post_id, user_id))
+                print("Post exists, edit received, and this update edited the post.")
+                rsp = {"success": True, "message": "Post updated"}
+            except pymysql.Error as e:
+                print(e)
+                rsp = {'success': False, 'message': str(e)}
         return rsp
 
     def update_response(user_id, resp_id, content):
