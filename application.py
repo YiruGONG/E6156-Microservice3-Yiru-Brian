@@ -212,7 +212,7 @@ def forum_mypost(user_id):
 def add_post(user_id):
     if request.method == 'POST':
         post_res = ForumPostResource.add_post(user_id,
-                                              # 0,
+                                              0,
                                               str(request.get_json()["title"]),
                                               str(request.get_json()["location"]),
                                               str(request.get_json()["label"]),
