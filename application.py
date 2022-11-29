@@ -347,6 +347,43 @@ def delete_resp(resp_id):
 
     return rsp
 
+@application.route('/api/forum/location_lookup', methods=["POST"])
+def loc_lookup():
+    if request.method == 'POST':
+        valid_address = ForumPostResource.location_lookup(str(request.get_json()["line1"]),
+                                                    str(request.get_json()["secondary"]),
+                                                    str(request.get_json()["city"]),
+                                                    str(request.get_json()["state"]),
+                                                    str(request.get_json()["zipcode"]))
+        if valid_address['success']:
+            rsp = Response(json.dumps(valid_address), status=200, content_type="application.json")
+            print("Found a valid address")
+        else:
+            rsp = Response(json.dumps(valid_address), status=200, content_type="application.json")
+            print("No associated valid address")
+    else:
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Not a post method")
+
+    return rsp
+
+@application.route('/api/forum/newlocation', methods=["POST"])
+def add_loc():
+    if request.method == 'POST':
+        post_res = ForumPostResource.add_location(str(request.get_json()["name"]),
+                                                  str(request.get_json()["address"]))
+        if post_res['success']:
+            rsp = Response(json.dumps(post_res), status=200, content_type="application.json")
+            print("Location added")
+        else:
+            rsp = Response(json.dumps(post_res), status=200, content_type="application.json")
+            print("Location not added")
+    else:
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+        print("Not a post method")
+
+    return rsp
+
 
 # def sort_post():
 #     # TO DO...

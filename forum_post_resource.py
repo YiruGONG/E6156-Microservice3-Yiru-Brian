@@ -1,7 +1,8 @@
+import os
 import pymysql
 from datetime import datetime
-import os
-
+from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
+from smartystreets_python_sdk.us_street import Lookup as StreetLookup
 
 class ForumPostResource:
 
@@ -531,6 +532,63 @@ class ForumPostResource:
                 sql = "INSERT INTO ms3.Response_Thumbs VALUES (DEFAULT,%s,%s)"
                 cur.execute(sql, args=(resp_id, user_id))
                 result = {'success': True, 'message': 'Thumb added to Response'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def location_lookup(li, sec, city, st, zip):
+        auth_id = "2b3776cb-23dd-3197-5bee-358c9aed0cb2"
+        auth_token = "rTmcnZG9bg5nN95rTJp3"
+
+        credentials = StaticCredentials(auth_id, auth_token)
+        client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
+
+        lookup = StreetLookup()
+        lookup.street = li
+        lookup.secondary = sec
+        lookup.city = city
+        lookup.state = st
+        lookup.zipcode = zip
+        lookup.candidates = 3
+        lookup.match = "strict"
+
+        try:
+            client.send_lookup(lookup)
+        except exceptions.SmartyException as err:
+            print(err)
+            return
+
+        result = lookup.result
+
+        if not result:
+            print("No candidates. The address is not valid.")
+            res = {"success": False,
+                   "message": "No valid address found via Smarty"}
+        else:
+            first_candidate = result[0]
+            print("Valid Street Address: " + first_candidate.delivery_line_1)
+            print("Valid City Address: " + first_candidate.last_line)
+            full_address = "{}, {}".format(first_candidate.delivery_line_1, first_candidate.last_line)
+            res = {"success": True,
+                   "address": full_address,
+                   "message": "Valid address found via Smarty"}
+        return res
+
+    def add_location(name, address):
+        sql_query = "SELECT COUNT(Location_ID) FROM ms3.Location;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql_query)
+            key, val1 = next(iter(cur.fetchone().items()))
+            cur.execute("INSERT INTO ms3.Location (Name, Address) VALUES (%s, %s);", args=(name, address))
+            cur.execute(sql_query)
+            key, val2 = next(iter(cur.fetchone().items()))
+            if val2 - val1 == 1:
+                result = {'success': True, 'message': 'address added'}
+            else:
+                result = {'success': False, 'message': 'address not added'}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}
