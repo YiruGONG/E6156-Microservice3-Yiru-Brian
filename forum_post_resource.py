@@ -28,11 +28,16 @@ class ForumPostResource:
     @staticmethod
     def get_all_posts(user_id):
         sql = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_id) AS Thumbs, if(U.PT_ID is null, false, true) AS is_Thumbed
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_id) AS Thumbs, 
+                if(U.PT_ID is null, false, true) AS is_Thumbed
             FROM ms3.Post P
-            LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
-            LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
-            LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
+                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+                LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+                LEFT JOIN (
+                    SELECT * 
+                    FROM ms3.Post_Thumbs 
+                    WHERE User_ID= %s
+                ) U ON P.Post_ID = U.Post_ID
             GROUP BY Post_id, Title, User_ID, Time, Location, Label
             LIMIT 5;
         """
@@ -52,6 +57,68 @@ class ForumPostResource:
             print(e)
             result = {'success': False, 'message': str(e)}
         return result
+
+    def get_posts_by_relevance(user_id, sort):
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        if sort == "pop":
+            ## return posts that are the most popular
+            sql1 = """
+                SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
+                    if(U.Post_ID is null, false, true) AS is_Thumbed
+                FROM ms3.Post P
+                    LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+                    LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+                    LEFT JOIN (
+                        SELECT Post_ID
+                        FROM ms3.Post_Thumbs
+                        WHERE User_ID = %s
+                    ) U ON P.Post_ID = U.Post_ID
+                GROUP BY P.Post_id
+                ORDER BY Thumbs DESC
+                LIMIT 5;
+            """
+            try:
+                cur.execute(sql1, args=(user_id))
+                res = cur.fetchall()
+                if res:
+                    post = {'success': True, 'data': res, "message": "Up to 5 most popular posts listed"}
+                else:
+                    post = {'success': False, 'data': res, 'message': 'No popular posts found'}
+            except pymysql.Error as e:
+                print(e)
+                post = {'success': False, 'message': str(e)}
+        elif sort == "relevant":
+            ## return recent posts that are relatively popular
+            t = str(datetime.now())
+            sql1 = """
+                SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
+                    if(U.Post_ID is null, false, true) AS is_Thumbed
+                FROM ms3.Post P
+                    LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+                    LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+                    LEFT JOIN (
+                        SELECT Post_ID
+                        FROM ms3.Post_Thumbs
+                        WHERE User_ID = %s
+                    ) U ON P.Post_ID = U.Post_ID
+                WHERE DATEDIFF(%s, P.Time) < 14
+                GROUP BY P.Post_id
+                ORDER BY Thumbs DESC
+                LIMIT 5;
+            """
+            try:
+                cur.execute(sql1, args=(user_id, t))
+                res = cur.fetchall()
+                if res:
+                    post = {'success': True, 'data': res, "message": "Up tp 5 most popular recent posts listed"}
+                else:
+                    post = {'success': False, 'data': res, 'message': 'No recent posts found'}
+            except pymysql.Error as e:
+                print(e)
+                post = {'success': False, 'message': str(e)}
+
+        return post
 
     def get_posts_by_label(user_id, label):
         ## return posts under a subcategory

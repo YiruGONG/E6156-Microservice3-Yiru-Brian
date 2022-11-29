@@ -158,6 +158,18 @@ def forum(user_id):
     return rsp
 
 
+@application.route('/api/forum/sort/<sort>/user_id/<user_id>', methods=["GET"])
+def forum_sort(user_id, sort):
+    result = ForumPostResource.get_posts_by_relevance(user_id, sort)
+
+    if result['success']:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+    else:
+        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+
+    return rsp
+
+
 @application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
 def forum_cat(user_id, cat):
     result = ForumPostResource.get_posts_by_label(user_id, cat)
@@ -385,17 +397,7 @@ def add_loc():
     return rsp
 
 
-# def sort_post():
-#     # TO DO...
-#
-# def filter_post():
-#     # TO DO...
-#
-# @application.route('/api/forum/mypost/<user_id>/post/<post_id>/edit', methods=["GET","POST"])
-# def edit_post(user_id):
-#     ###### Not completed yet
-#     return None
-#
+
 
 
 if __name__ == '__main__':
