@@ -646,10 +646,13 @@ class ForumPostResource:
         sql_query = "SELECT COUNT(Location_ID) FROM ms3.Location;"
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
+        url_address = address.replace(" ", "+")
+        url_address = url_address.replace(",", "%2C")
+        gmap_url = "https://www.google.com/maps/place/{}".format(url_address)
         try:
             cur.execute(sql_query)
             key, val1 = next(iter(cur.fetchone().items()))
-            cur.execute("INSERT INTO ms3.Location (Name, Address) VALUES (%s, %s);", args=(name, address))
+            cur.execute("INSERT INTO ms3.Location (Name, Address, Map_URL) VALUES (%s, %s, %s);", args=(name, address, gmap_url))
             cur.execute(sql_query)
             key, val2 = next(iter(cur.fetchone().items()))
             if val2 - val1 == 1:
