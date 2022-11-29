@@ -32,7 +32,8 @@ class ForumPostResource:
             LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
             LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
             LEFT JOIN (SELECT * FROM ms3.Post_Thumbs WHERE User_ID= %s) U ON P.Post_ID = U.Post_ID
-            GROUP BY Post_id, Title, User_ID, Time, Location, Label;
+            GROUP BY Post_id, Title, User_ID, Time, Location, Label
+            LIMIT 5;
         """
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
@@ -65,7 +66,8 @@ class ForumPostResource:
                     WHERE User_ID = %s
                 ) U ON P.Post_ID = U.Post_ID
             WHERE P.Label = %s
-            GROUP BY P.Post_id;
+            GROUP BY P.Post_id
+            LIMIT 5;
         """
         label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
         label = label_dict[label]
@@ -102,26 +104,26 @@ class ForumPostResource:
         #     HAVING correct_Label = TRUE;
         # """
         sql2 = """
-                    SELECT * 
-                    FROM (    
-                        SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, 
-                            if(U.Response_ID is null, false, true) AS is_Thumbed
-                        FROM ms3.Response R
-                            LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-                            LEFT JOIN (
-                                SELECT Response_ID, User_ID
-                                FROM ms3.Response_Thumbs
-                                WHERE User_ID = %s
-                            ) U ON R.Response_ID = U.Response_ID
-                            RIGHT JOIN (
-                                SELECT Post_ID, Label
-                                FROM ms3.Post
-                                WHERE Label = %s
-                            ) L ON R.Post_ID = L.Post_ID
-                        GROUP BY R.Response_ID
-                    ) A
-                    WHERE Response_ID IS NOT NULL;
-                """
+            SELECT * 
+            FROM (    
+                SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, if(U.Response_ID is null, false, true) AS is_Thumbed
+                FROM ms3.Response R
+                    LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+                    LEFT JOIN (
+                        SELECT Response_ID, User_ID
+                        FROM ms3.Response_Thumbs
+                        WHERE User_ID = %s
+                    ) U ON R.Response_ID = U.Response_ID
+                    RIGHT JOIN (
+                        SELECT Post_ID, Label
+                        FROM ms3.Post
+                        WHERE Label = %s
+                        LIMIT 5
+                    ) L ON R.Post_ID = L.Post_ID
+                GROUP BY R.Response_ID
+            ) A
+            WHERE Response_ID IS NOT NULL;
+        """
         cur = conn.cursor()
         try:
             cur.execute(sql2, args=(user_id, label))
