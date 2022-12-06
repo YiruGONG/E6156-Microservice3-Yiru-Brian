@@ -58,11 +58,9 @@ class ForumPostResource:
     #         result = {'success': False, 'message': str(e)}
     #     return result
 
-    def get_all_posts(user_id, label = 'all', sort = 'all'):
+    def get_all_posts(user_id, label = 'all', sort = 'all', page = '1'):
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
-        print(user_id, label, sort)
-        print(type(user_id), type(label), type(sort))
         sql = """
             SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_ID) AS Thumbs, 
                 if(U.Post_ID is null, false, true) AS is_Thumbed, P.Edited As is_Edited
@@ -75,8 +73,11 @@ class ForumPostResource:
                     WHERE User_ID = %s
                 ) U ON P.Post_ID = U.Post_ID
             GROUP BY P.Post_id
-            LIMIT 5;
+            LIMIT %s
+            OFFSET %s;
         """
+        limit = 2
+        offset = (int(page)-1)*limit
         if (label != 'all'):
             print("in")
             label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
@@ -97,9 +98,9 @@ class ForumPostResource:
             print(sql)
             try:
                 if label != 'all':
-                    cur.execute(sql, args=(user_id, t, label))
+                    cur.execute(sql, args=(user_id, t, label, limit, offset))
                 else:
-                    cur.execute(sql, args=(user_id, t))
+                    cur.execute(sql, args=(user_id, t, limit, offset))
                 res = cur.fetchall()
                 label = list(set([x['Label'] for x in res]))
                 label = [i for i in label if i is not None]
@@ -126,9 +127,9 @@ class ForumPostResource:
                 sql = ' '.join(s_list)
             try:
                 if label != 'all':
-                    cur.execute(sql, args=(user_id, label))
+                    cur.execute(sql, args=(user_id, label, limit, offset))
                 else:
-                    cur.execute(sql, args=(user_id))
+                    cur.execute(sql, args=(user_id, limit, offset))
                 res = cur.fetchall()
                 label = list(set([x['Label'] for x in res]))
                 label = [i for i in label if i is not None]

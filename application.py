@@ -146,9 +146,9 @@ def hello_message():
     return welcome
 
 
-@application.route('/api/forum/cat/<cat>/sort/<sort>/user_id/<user_id>', methods=["GET"])
-def forum(user_id, cat, sort):
-    result = ForumPostResource.get_all_posts(user_id, cat, sort)
+@application.route('/api/forum/cat/<cat>/sort/<sort>/page/<page>/user_id/<user_id>', methods=["GET"])
+def forum(user_id, cat, sort, page):
+    result = ForumPostResource.get_all_posts(user_id, cat, sort, page)
 
     return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
