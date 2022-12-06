@@ -148,15 +148,11 @@ def hello_message():
 
 @application.route('/api/forum/cat/<cat>/sort/<sort>/user_id/<user_id>', methods=["GET"])
 def forum(user_id, cat, sort):
-    print(type(user_id), type(cat), type(sort))
     result = ForumPostResource.get_all_posts(user_id, cat, sort)
 
-    if result['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+    return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
-    return rsp
+
 # @application.route('/api/forum/sort/<sort>/user_id/<user_id>', methods=["GET"])
 # def forum_sort(user_id, sort):
 #     result = ForumPostResource.get_posts_by_relevance(user_id, sort)
@@ -187,44 +183,29 @@ def forum(user_id, cat, sort):
 def post_details(user_id, post_id):
     result = ForumPostResource.get_post_by_id(user_id, post_id)
 
-    if result['post']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    elif result['response']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response("NOT FOUND TEST", status=404, content_type="text/plain")
-
-    return rsp
+    return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
 
 @application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
 def forum_mypost(user_id):
     result = ForumPostResource.get_my_posts(user_id)
 
-    if result['post']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    elif result['response']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-        # rsp = Response("Method Failed", status=404, content_type="text/plain")
-
-    return rsp
-
+    return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
 @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
 def add_post(user_id):
     if request.method == 'POST':
-        post_res = ForumPostResource.add_post(user_id,
-                                              0,
-                                              str(request.get_json()["title"]),
-                                              str(request.get_json()["location"]),
-                                              str(request.get_json()["label"]),
-                                              str(request.get_json()["content"]),
-                                              str(request.get_json()["street"]),
-                                              str(request.get_json()["city"]),
-                                              str(request.get_json()["state"]))
-        if post_res['success']:
+        post_res = ForumPostResource.add_post_with_new_location(user_id,
+                                                                0,
+                                                                str(request.get_json()["title"]),
+                                                                str(request.get_json()["location"]),
+                                                                str(request.get_json()["label"]),
+                                                                str(request.get_json()["content"]),
+                                                                str(request.get_json()["new location"]),
+                                                                str(request.get_json()["street"]),
+                                                                str(request.get_json()["city"]),
+                                                                str(request.get_json()["state"]))
+        if post_res['result']['success']:
             res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
             print("Post added")
@@ -233,6 +214,25 @@ def add_post(user_id):
         print("Post not added")
 
     return rsp
+
+# @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
+# def add_post(user_id):
+#     if request.method == 'POST':
+#         post_res = ForumPostResource.add_post(user_id,
+#                                               0,
+#                                               str(request.get_json()["title"]),
+#                                               str(request.get_json()["location"]),
+#                                               str(request.get_json()["label"]),
+#                                               str(request.get_json()["content"]))
+#         if post_res['success']:
+#             res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
+#             rsp = Response(json.dumps(res), status=200, content_type="application.json")
+#             print("Post added")
+#     else:
+#         rsp = Response("Method failed", status=404, content_type="text/plain")
+#         print("Post not added")
+#
+#     return rsp
 
 
 @application.route('/api/forum/post/<post_id>/newresponse/user_id/<user_id>', methods=["POST"])
@@ -364,11 +364,11 @@ def delete_resp(resp_id):
 @application.route('/api/forum/location_lookup', methods=["POST"])
 def loc_lookup():
     if request.method == 'POST':
-        valid_address = ForumPostResource.location_lookup(str(request.get_json()["line1"]),
-                                                          str(request.get_json()["secondary"]),
-                                                          str(request.get_json()["city"]),
-                                                          str(request.get_json()["state"]),
-                                                          str(request.get_json()["zipcode"]))
+        valid_address = ForumPostResource.location_lookup(line1 = str(request.get_json()["line1"]),
+                                                          line2 = str(request.get_json()["line2"]),
+                                                          city = str(request.get_json()["city"]),
+                                                          state = str(request.get_json()["state"]),
+                                                          zipcode = str(request.get_json()["zipcode"]))
         if valid_address['success']:
             rsp = Response(json.dumps(valid_address), status=200, content_type="application.json")
             print("Found a valid address")

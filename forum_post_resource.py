@@ -311,8 +311,8 @@ class ForumPostResource:
 
         ## return post details
         sql1 = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs,
-                if(U.Post_ID is null, false, true) AS is_Thumbed
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_ID) AS Thumbs,
+                if(U.Post_ID is null, false, true) AS is_Thumbed, P.Edited As is_Edited
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -357,25 +357,26 @@ class ForumPostResource:
         #     HAVING mypost = TRUE;
         # """
         sql2 = """
-                    SELECT *
-                    FROM (    
-                        SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, if(U.Response_ID is null, false, true) AS is_Thumbed
-                        FROM ms3.Response R
-                            LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-                            LEFT JOIN (
-                                SELECT Response_ID, User_ID
-                                FROM ms3.Response_Thumbs
-                                WHERE User_ID = %s
-                            ) U ON R.Response_ID = U.Response_ID
-                            RIGHT JOIN (
-                                SELECT Post_ID, User_ID
-                                FROM ms3.Post
-                                WHERE User_ID = %s
-                            ) L ON R.Post_ID = L.Post_ID
-                        GROUP BY R.Response_ID
-                    ) A
-                    WHERE REsponse_ID IS NOT NULL;
-                """
+            SELECT *
+            FROM (    
+                SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs, 
+                    if(U.Response_ID is null, false, true) AS is_Thumbed, R.Edited As is_Edited
+                FROM ms3.Response R
+                    LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+                    LEFT JOIN (
+                        SELECT Response_ID, User_ID
+                        FROM ms3.Response_Thumbs
+                        WHERE User_ID = %s
+                    ) U ON R.Response_ID = U.Response_ID
+                    RIGHT JOIN (
+                        SELECT Post_ID, User_ID
+                        FROM ms3.Post
+                        WHERE User_ID = %s
+                    ) L ON R.Post_ID = L.Post_ID
+                GROUP BY R.Response_ID
+            ) A
+            WHERE Response_ID IS NOT NULL;
+        """
         cur = conn.cursor()
         try:
             cur.execute(sql2, args=(user_id, user_id))
@@ -391,7 +392,8 @@ class ForumPostResource:
 
         return {"post": post, "response": response}
 
-    def location_lookup(self, li, sec, city, st, zip):
+    @staticmethod
+    def location_lookup(line1, line2, city, state, zipcode):
         auth_id = "2b3776cb-23dd-3197-5bee-358c9aed0cb2"
         auth_token = "rTmcnZG9bg5nN95rTJp3"
 
@@ -399,11 +401,11 @@ class ForumPostResource:
         client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
 
         lookup = StreetLookup()
-        lookup.street = li
-        lookup.secondary = sec
+        lookup.street = line1
+        lookup.secondary = line2
         lookup.city = city
-        lookup.state = st
-        lookup.zipcode = zip
+        lookup.state = state
+        lookup.zipcode = zipcode
         lookup.candidates = 3
         lookup.match = "strict"
 
@@ -429,6 +431,7 @@ class ForumPostResource:
                    "message": "Valid address found via Smarty"}
         return res
 
+    @staticmethod
     def add_location(name, address):
         sql_query = "SELECT COUNT(Location_ID) FROM ms3.Location;"
         conn = ForumPostResource._get_connection()
@@ -451,11 +454,33 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
-    def add_post(self, user_id, post_id, title, location, label, content, street, city, state):
+    def add_post_with_new_location(user_id, post_id, title, location, label, content, name, street, city, state):
+        input_location = ForumPostResource.location_lookup(street, " ", city, state, " ")
+        if input_location["success"]:
+            print("in first if")
+            input_location_address = input_location["address"]
+            print(input_location_address)
+            new_location = ForumPostResource.add_location(name, input_location_address)
+            if new_location["success"]:
+                print("in second if")
+                sql = "SELECT MAX(Location_ID) FROM ms3.Location;"
+                conn = ForumPostResource._get_connection()
+                cur = conn.cursor()
+                try:
+                    cur.execute(sql)
+                    key, val = next(iter(cur.fetchone().items()))
+                    print(val)
+                    resp = {"location": "new", "result": ForumPostResource.add_post(user_id, post_id, title, val, label, content)}
+                    return resp
+                except pymysql.Error as e:
+                    print(e)
+                    return {'success': False, 'message': str(e)}
+        resp = {"location": "original", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+        return resp
+
+    def add_post(user_id, post_id, title, location, label, content):
         t = str(datetime.now())
         sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
-        loc = self.location_lookup(street, " ", city, state, " ")
-        print(loc)
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
