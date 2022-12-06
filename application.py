@@ -146,9 +146,10 @@ def hello_message():
     return welcome
 
 
-@application.route('/api/forum/user_id/<user_id>', methods=["GET"])
-def forum(user_id):
-    result = ForumPostResource.get_all_posts(user_id)
+@application.route('/api/forum/cat/<cat>/sort/<sort>/user_id/<user_id>', methods=["GET"])
+def forum(user_id, cat, sort):
+    print(type(user_id), type(cat), type(sort))
+    result = ForumPostResource.get_all_posts(user_id, cat, sort)
 
     if result['success']:
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
@@ -156,32 +157,30 @@ def forum(user_id):
         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
     return rsp
-
-
-@application.route('/api/forum/sort/<sort>/user_id/<user_id>', methods=["GET"])
-def forum_sort(user_id, sort):
-    result = ForumPostResource.get_posts_by_relevance(user_id, sort)
-
-    if result['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-
-    return rsp
-
-
-@application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
-def forum_cat(user_id, cat):
-    result = ForumPostResource.get_posts_by_label(user_id, cat)
-
-    if result['post']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    elif result['response']['success']:
-        rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
-    else:
-        rsp = Response("NOT FOUND", status=404, content_type="text/plain")
-
-    return rsp
+# @application.route('/api/forum/sort/<sort>/user_id/<user_id>', methods=["GET"])
+# def forum_sort(user_id, sort):
+#     result = ForumPostResource.get_posts_by_relevance(user_id, sort)
+#
+#     if result['success']:
+#         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+#     else:
+#         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+#
+#     return rsp
+#
+#
+# @application.route('/api/forum/cat/<cat>/user_id/<user_id>', methods=["GET"])
+# def forum_cat(user_id, cat):
+#     result = ForumPostResource.get_posts_by_label(user_id, cat)
+#
+#     if result['post']['success']:
+#         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+#     elif result['response']['success']:
+#         rsp = Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+#     else:
+#         rsp = Response("NOT FOUND", status=404, content_type="text/plain")
+#
+#     return rsp
 
 
 @application.route('/api/forum/post/<post_id>/user_id/<user_id>', methods=["GET"])
@@ -221,7 +220,10 @@ def add_post(user_id):
                                               str(request.get_json()["title"]),
                                               str(request.get_json()["location"]),
                                               str(request.get_json()["label"]),
-                                              str(request.get_json()["content"]))
+                                              str(request.get_json()["content"]),
+                                              str(request.get_json()["street"]),
+                                              str(request.get_json()["city"]),
+                                              str(request.get_json()["state"]))
         if post_res['success']:
             res = {'success': True, 'message': 'post successfully added', 'userId': post_res}
             rsp = Response(json.dumps(res), status=200, content_type="application.json")
@@ -363,10 +365,10 @@ def delete_resp(resp_id):
 def loc_lookup():
     if request.method == 'POST':
         valid_address = ForumPostResource.location_lookup(str(request.get_json()["line1"]),
-                                                    str(request.get_json()["secondary"]),
-                                                    str(request.get_json()["city"]),
-                                                    str(request.get_json()["state"]),
-                                                    str(request.get_json()["zipcode"]))
+                                                          str(request.get_json()["secondary"]),
+                                                          str(request.get_json()["city"]),
+                                                          str(request.get_json()["state"]),
+                                                          str(request.get_json()["zipcode"]))
         if valid_address['success']:
             rsp = Response(json.dumps(valid_address), status=200, content_type="application.json")
             print("Found a valid address")
@@ -395,9 +397,6 @@ def add_loc():
         print("Not a post method")
 
     return rsp
-
-
-
 
 
 if __name__ == '__main__':

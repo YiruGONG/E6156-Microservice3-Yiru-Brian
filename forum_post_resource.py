@@ -25,106 +25,47 @@ class ForumPostResource:
         )
         return conn
 
-    @staticmethod
-    def get_all_posts(user_id):
+
+    # def get_all_posts(user_id):
+    #     sql = """
+    #         SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_id) AS Thumbs,
+    #             if(U.PT_ID is null, false, true) AS is_Thumbed
+    #         FROM ms3.Post P
+    #             LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+    #             LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+    #             LEFT JOIN (
+    #                 SELECT *
+    #                 FROM ms3.Post_Thumbs
+    #                 WHERE User_ID= %s
+    #             ) U ON P.Post_ID = U.Post_ID
+    #         GROUP BY Post_id, Title, User_ID, Time, Location, Label
+    #         LIMIT 5;
+    #     """
+    #     conn = ForumPostResource._get_connection()
+    #     cur = conn.cursor()
+    #     try:
+    #         cur.execute(sql, user_id)
+    #         # if success
+    #         res = cur.fetchall()
+    #         if res:
+    #             label = list(set([x['Label'] for x in res]))
+    #             label = [i for i in label if i is not None]
+    #             result = {'success': True, 'data': res, 'labels': label}
+    #         else:
+    #             result = {'success': False, 'message': 'Not Found', 'data': res}
+    #     except pymysql.Error as e:
+    #         print(e)
+    #         result = {'success': False, 'message': str(e)}
+    #     return result
+
+    def get_all_posts(user_id, label = 'all', sort = 'all'):
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        print(user_id, label, sort)
+        print(type(user_id), type(label), type(sort))
         sql = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_id) AS Thumbs, 
-                if(U.PT_ID is null, false, true) AS is_Thumbed
-            FROM ms3.Post P
-                LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
-                LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
-                LEFT JOIN (
-                    SELECT * 
-                    FROM ms3.Post_Thumbs 
-                    WHERE User_ID= %s
-                ) U ON P.Post_ID = U.Post_ID
-            GROUP BY Post_id, Title, User_ID, Time, Location, Label
-            LIMIT 5;
-        """
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(sql, user_id)
-            # if success
-            res = cur.fetchall()
-            if res:
-                label = list(set([x['Label'] for x in res]))
-                label = [i for i in label if i is not None]
-                result = {'success': True, 'data': res, 'labels': label}
-            else:
-                result = {'success': False, 'message': 'Not Found', 'data': res}
-        except pymysql.Error as e:
-            print(e)
-            result = {'success': False, 'message': str(e)}
-        return result
-
-    def get_posts_by_relevance(user_id, sort):
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        if sort == "pop":
-            ## return posts that are the most popular
-            sql1 = """
-                SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
-                    if(U.Post_ID is null, false, true) AS is_Thumbed
-                FROM ms3.Post P
-                    LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
-                    LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
-                    LEFT JOIN (
-                        SELECT Post_ID
-                        FROM ms3.Post_Thumbs
-                        WHERE User_ID = %s
-                    ) U ON P.Post_ID = U.Post_ID
-                GROUP BY P.Post_id
-                ORDER BY Thumbs DESC
-                LIMIT 5;
-            """
-            try:
-                cur.execute(sql1, args=(user_id))
-                res = cur.fetchall()
-                if res:
-                    post = {'success': True, 'data': res, "message": "Up to 5 most popular posts listed"}
-                else:
-                    post = {'success': False, 'data': res, 'message': 'No popular posts found'}
-            except pymysql.Error as e:
-                print(e)
-                post = {'success': False, 'message': str(e)}
-        elif sort == "relevant":
-            ## return recent posts that are relatively popular
-            t = str(datetime.now())
-            sql1 = """
-                SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
-                    if(U.Post_ID is null, false, true) AS is_Thumbed
-                FROM ms3.Post P
-                    LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
-                    LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
-                    LEFT JOIN (
-                        SELECT Post_ID
-                        FROM ms3.Post_Thumbs
-                        WHERE User_ID = %s
-                    ) U ON P.Post_ID = U.Post_ID
-                WHERE DATEDIFF(%s, P.Time) < 14
-                GROUP BY P.Post_id
-                ORDER BY Thumbs DESC
-                LIMIT 5;
-            """
-            try:
-                cur.execute(sql1, args=(user_id, t))
-                res = cur.fetchall()
-                if res:
-                    post = {'success': True, 'data': res, "message": "Up tp 5 most popular recent posts listed"}
-                else:
-                    post = {'success': False, 'data': res, 'message': 'No recent posts found'}
-            except pymysql.Error as e:
-                print(e)
-                post = {'success': False, 'message': str(e)}
-
-        return post
-
-    def get_posts_by_label(user_id, label):
-        ## return posts under a subcategory
-        sql1 = """
-            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, P.Label, count(T.PT_ID) AS Thumbs, 
-                if(U.Post_ID is null, false, true) AS is_Thumbed
+            SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_ID) AS Thumbs, 
+                if(U.Post_ID is null, false, true) AS is_Thumbed, P.Edited As is_Edited
             FROM ms3.Post P
                 LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
                 LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
@@ -133,77 +74,160 @@ class ForumPostResource:
                     FROM ms3.Post_Thumbs
                     WHERE User_ID = %s
                 ) U ON P.Post_ID = U.Post_ID
-            WHERE P.Label = %s
             GROUP BY P.Post_id
             LIMIT 5;
         """
-        label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
-        label = label_dict[label]
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute(sql1, args=(user_id, label))
-            res = cur.fetchall()
-            if res:
-                post = {'success': True, 'data': res}
+        if (label != 'all'):
+            print("in")
+            label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
+            label = label_dict[label]
+        if sort == "relevant":
+            ## return recent posts that are relatively popular
+            t = str(datetime.now())
+            s_list = sql.split("GROUP BY")
+            s_list.insert(1, "WHERE DATEDIFF(%s, P.Time) < 21 GROUP BY")
+            sql = ' '.join(s_list)
+            s_list = sql.split("LIMIT")
+            s_list.insert(1, "ORDER BY Thumbs DESC LIMIT")
+            sql = ' '.join(s_list)
+            if label != 'all':
+                s_list = sql.split("GROUP BY")
+                s_list.insert(1, "AND P.Label = %s GROUP BY")
+                sql = ' '.join(s_list)
+            print(sql)
+            try:
+                if label != 'all':
+                    cur.execute(sql, args=(user_id, t, label))
+                else:
+                    cur.execute(sql, args=(user_id, t))
+                res = cur.fetchall()
+                label = list(set([x['Label'] for x in res]))
+                label = [i for i in label if i is not None]
+                if res:
+                    post = {'success': True, 'data': res, "labels": label, "message": "Up tp 5 most popular recent (3 weeks) posts in described category listed"}
+                else:
+                    post = {'success': False, 'data': res, 'message': 'No recent posts in described category found'}
+            except pymysql.Error as e:
+                print(e)
+                post = {'success': False, 'message': str(e)}
+        else:
+            if sort == "popular":
+                ## return posts that are the most popular
+                s_list = sql.split("LIMIT")
+                s_list.insert(1, "ORDER BY Thumbs DESC LIMIT")
+                sql = ' '.join(s_list)
             else:
-                post = {'success': False, 'message': 'Not Found', 'data': res}
-        except pymysql.Error as e:
-            print(e)
-            post = {'success': False, 'message': str(e)}
+                s_list = sql.split("LIMIT")
+                s_list.insert(1, "ORDER BY Time DESC LIMIT")
+                sql = ' '.join(s_list)
+            if label != 'all':
+                s_list = sql.split("GROUP BY")
+                s_list.insert(1, "WHERE P.Label = %s GROUP BY")
+                sql = ' '.join(s_list)
+            try:
+                if label != 'all':
+                    cur.execute(sql, args=(user_id, label))
+                else:
+                    cur.execute(sql, args=(user_id))
+                res = cur.fetchall()
+                label = list(set([x['Label'] for x in res]))
+                label = [i for i in label if i is not None]
+                if (res and (sort == "popular")):
+                    post = {'success': True, 'data': res, 'labels': label, "message": "Up to 5 most popular posts in the described cateogry listed"}
+                elif res:
+                    post = {'success': True, 'data': res, 'labels': label, "message": "Up to 5 most recent posts in the described cateogry listed"}
+                else:
+                    post = {'success': False, 'data': res, 'message': 'No popular posts found'}
+            except pymysql.Error as e:
+                print(e)
+                post = {'success': False, 'message': str(e)}
 
-        ## return responses
-        # sql2 = """
-        #     SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
-        #         if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
-        #     FROM ms3.Response R
-        #         LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-        #         LEFT JOIN (
-        #             SELECT Response_ID, User_ID
-        #             FROM ms3.Response_Thumbs
-        #             WHERE User_ID = %s
-        #         ) U ON R.Response_ID = U.Response_ID
-        #         LEFT JOIN (
-        #             SELECT Post_ID, Label
-        #             FROM ms3.Post
-        #             WHERE Label = %s
-        #         ) L ON R.Post_ID = L.Post_ID
-        #     GROUP BY R.Response_ID
-        #     HAVING correct_Label = TRUE;
-        # """
-        sql2 = """
-            SELECT * 
-            FROM (    
-                SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, if(U.Response_ID is null, false, true) AS is_Thumbed
-                FROM ms3.Response R
-                    LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
-                    LEFT JOIN (
-                        SELECT Response_ID, User_ID
-                        FROM ms3.Response_Thumbs
-                        WHERE User_ID = %s
-                    ) U ON R.Response_ID = U.Response_ID
-                    RIGHT JOIN (
-                        SELECT Post_ID, Label
-                        FROM ms3.Post
-                        WHERE Label = %s
-                        LIMIT 5
-                    ) L ON R.Post_ID = L.Post_ID
-                GROUP BY R.Response_ID
-            ) A
-            WHERE Response_ID IS NOT NULL;
-        """
-        cur = conn.cursor()
-        try:
-            cur.execute(sql2, args=(user_id, label))
-            res = cur.fetchall()
-            if res:
-                response = {'success': True, 'data': res}
-            else:
-                response = {'success': False, 'message': 'Not Found', 'data': res}
-        except pymysql.Error as e:
-            print(e)
-            response = {'success': False, 'message': str(e)}
-        return {"post": post, "response": response}
+        return post
+
+    # def get_posts_by_label(user_id, label):
+    #     ## return posts under a subcategory
+    #     sql1 = """
+    #         SELECT P.Post_ID, P.Title, P.User_ID, P.Time, L.Name AS Location, L.Map_URL, P.Label, count(T.PT_ID) AS Thumbs,
+    #             if(U.Post_ID is null, false, true) AS is_Thumbed, P.Edited As is_Edited
+    #         FROM ms3.Post P
+    #             LEFT JOIN ms3.Location L ON P.Location_ID = L.Location_ID
+    #             LEFT JOIN ms3.Post_Thumbs T ON P.Post_id = T.Post_id
+    #             LEFT JOIN (
+    #                 SELECT Post_ID
+    #                 FROM ms3.Post_Thumbs
+    #                 WHERE User_ID = %s
+    #             ) U ON P.Post_ID = U.Post_ID
+    #         WHERE P.Label = %s
+    #         GROUP BY P.Post_id
+    #         LIMIT 5;
+    #     """
+    #     label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
+    #     label = label_dict[label]
+    #     conn = ForumPostResource._get_connection()
+    #     cur = conn.cursor()
+    #     try:
+    #         cur.execute(sql1, args=(user_id, label))
+    #         res = cur.fetchall()
+    #         if res:
+    #             post = {'success': True, 'data': res}
+    #         else:
+    #             post = {'success': False, 'message': 'Not Found', 'data': res}
+    #     except pymysql.Error as e:
+    #         print(e)
+    #         post = {'success': False, 'message': str(e)}
+    #
+    #     ## return responses
+    #     # sql2 = """
+    #     #     SELECT R.Response_ID, R.Post_ID, R.User_ID, R.Time, R.Content, count(T.RT_ID) AS Thumbs,
+    #     #         if(U.Response_ID is null, false, true) AS is_Thumbed, if(L.Post_ID is null, false, true) AS correct_Label
+    #     #     FROM ms3.Response R
+    #     #         LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+    #     #         LEFT JOIN (
+    #     #             SELECT Response_ID, User_ID
+    #     #             FROM ms3.Response_Thumbs
+    #     #             WHERE User_ID = %s
+    #     #         ) U ON R.Response_ID = U.Response_ID
+    #     #         LEFT JOIN (
+    #     #             SELECT Post_ID, Label
+    #     #             FROM ms3.Post
+    #     #             WHERE Label = %s
+    #     #         ) L ON R.Post_ID = L.Post_ID
+    #     #     GROUP BY R.Response_ID
+    #     #     HAVING correct_Label = TRUE;
+    #     # """
+    #     sql2 = """
+    #         SELECT *
+    #         FROM (
+    #             SELECT R.Response_ID, R.Post_ID, R.User_ID, count(T.RT_ID) AS Thumbs, if(U.Response_ID is null, false, true) AS is_Thumbed
+    #             FROM ms3.Response R
+    #                 LEFT JOIN ms3.Response_Thumbs T ON R.Response_ID = T.Response_ID
+    #                 LEFT JOIN (
+    #                     SELECT Response_ID, User_ID
+    #                     FROM ms3.Response_Thumbs
+    #                     WHERE User_ID = %s
+    #                 ) U ON R.Response_ID = U.Response_ID
+    #                 RIGHT JOIN (
+    #                     SELECT Post_ID, Label
+    #                     FROM ms3.Post
+    #                     WHERE Label = %s
+    #                     LIMIT 5
+    #                 ) L ON R.Post_ID = L.Post_ID
+    #             GROUP BY R.Response_ID
+    #         ) A
+    #         WHERE Response_ID IS NOT NULL;
+    #     """
+    #     cur = conn.cursor()
+    #     try:
+    #         cur.execute(sql2, args=(user_id, label))
+    #         res = cur.fetchall()
+    #         if res:
+    #             response = {'success': True, 'data': res}
+    #         else:
+    #             response = {'success': False, 'message': 'Not Found', 'data': res}
+    #     except pymysql.Error as e:
+    #         print(e)
+    #         response = {'success': False, 'message': str(e)}
+    #     return {"post": post, "response": response}
 
     def get_post_by_id(user_id, post_id):
 
@@ -367,9 +391,71 @@ class ForumPostResource:
 
         return {"post": post, "response": response}
 
-    def add_post(user_id, post_id, title, location, label, content):
+    def location_lookup(self, li, sec, city, st, zip):
+        auth_id = "2b3776cb-23dd-3197-5bee-358c9aed0cb2"
+        auth_token = "rTmcnZG9bg5nN95rTJp3"
+
+        credentials = StaticCredentials(auth_id, auth_token)
+        client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
+
+        lookup = StreetLookup()
+        lookup.street = li
+        lookup.secondary = sec
+        lookup.city = city
+        lookup.state = st
+        lookup.zipcode = zip
+        lookup.candidates = 3
+        lookup.match = "strict"
+
+        try:
+            client.send_lookup(lookup)
+        except exceptions.SmartyException as err:
+            print(err)
+            return
+
+        result = lookup.result
+
+        if not result:
+            print("No candidates. The address is not valid.")
+            res = {"success": False,
+                   "message": "No valid address found via Smarty"}
+        else:
+            first_candidate = result[0]
+            print("Valid Street Address: " + first_candidate.delivery_line_1)
+            print("Valid City Address: " + first_candidate.last_line)
+            full_address = "{}, {}".format(first_candidate.delivery_line_1, first_candidate.last_line)
+            res = {"success": True,
+                   "address": full_address,
+                   "message": "Valid address found via Smarty"}
+        return res
+
+    def add_location(name, address):
+        sql_query = "SELECT COUNT(Location_ID) FROM ms3.Location;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        url_address = address.replace(" ", "+")
+        url_address = url_address.replace(",", "%2C")
+        gmap_url = "https://www.google.com/maps/place/{}".format(url_address)
+        try:
+            cur.execute(sql_query)
+            key, val1 = next(iter(cur.fetchone().items()))
+            cur.execute("INSERT INTO ms3.Location (Name, Address, Map_URL) VALUES (%s, %s, %s);", args=(name, address, gmap_url))
+            cur.execute(sql_query)
+            key, val2 = next(iter(cur.fetchone().items()))
+            if val2 - val1 == 1:
+                result = {'success': True, 'message': 'address added'}
+            else:
+                result = {'success': False, 'message': 'address not added'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def add_post(self, user_id, post_id, title, location, label, content, street, city, state):
         t = str(datetime.now())
         sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
+        loc = self.location_lookup(street, " ", city, state, " ")
+        print(loc)
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         try:
@@ -604,65 +690,9 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
-    def location_lookup(li, sec, city, st, zip):
-        auth_id = "2b3776cb-23dd-3197-5bee-358c9aed0cb2"
-        auth_token = "rTmcnZG9bg5nN95rTJp3"
 
-        credentials = StaticCredentials(auth_id, auth_token)
-        client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
 
-        lookup = StreetLookup()
-        lookup.street = li
-        lookup.secondary = sec
-        lookup.city = city
-        lookup.state = st
-        lookup.zipcode = zip
-        lookup.candidates = 3
-        lookup.match = "strict"
 
-        try:
-            client.send_lookup(lookup)
-        except exceptions.SmartyException as err:
-            print(err)
-            return
-
-        result = lookup.result
-
-        if not result:
-            print("No candidates. The address is not valid.")
-            res = {"success": False,
-                   "message": "No valid address found via Smarty"}
-        else:
-            first_candidate = result[0]
-            print("Valid Street Address: " + first_candidate.delivery_line_1)
-            print("Valid City Address: " + first_candidate.last_line)
-            full_address = "{}, {}".format(first_candidate.delivery_line_1, first_candidate.last_line)
-            res = {"success": True,
-                   "address": full_address,
-                   "message": "Valid address found via Smarty"}
-        return res
-
-    def add_location(name, address):
-        sql_query = "SELECT COUNT(Location_ID) FROM ms3.Location;"
-        conn = ForumPostResource._get_connection()
-        cur = conn.cursor()
-        url_address = address.replace(" ", "+")
-        url_address = url_address.replace(",", "%2C")
-        gmap_url = "https://www.google.com/maps/place/{}".format(url_address)
-        try:
-            cur.execute(sql_query)
-            key, val1 = next(iter(cur.fetchone().items()))
-            cur.execute("INSERT INTO ms3.Location (Name, Address, Map_URL) VALUES (%s, %s, %s);", args=(name, address, gmap_url))
-            cur.execute(sql_query)
-            key, val2 = next(iter(cur.fetchone().items()))
-            if val2 - val1 == 1:
-                result = {'success': True, 'message': 'address added'}
-            else:
-                result = {'success': False, 'message': 'address not added'}
-        except pymysql.Error as e:
-            print(e)
-            result = {'success': False, 'message': str(e)}
-        return result
 
     # def get_by_key(key):
     #
