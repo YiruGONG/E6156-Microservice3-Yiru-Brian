@@ -102,10 +102,8 @@ class ForumPostResource:
                 else:
                     cur.execute(sql, args=(user_id, t, limit, offset))
                 res = cur.fetchall()
-                label = list(set([x['Label'] for x in res]))
-                label = [i for i in label if i is not None]
                 if res:
-                    post = {'success': True, 'data': res, "labels": label, "message": "Up tp 5 most popular recent (3 weeks) posts in described category listed"}
+                    post = {'success': True, 'data': res, "message": "Up tp 5 most popular recent (3 weeks) posts in described category listed"}
                 else:
                     post = {'success': False, 'data': res, 'message': 'No recent posts in described category found'}
             except pymysql.Error as e:
@@ -131,12 +129,10 @@ class ForumPostResource:
                 else:
                     cur.execute(sql, args=(user_id, limit, offset))
                 res = cur.fetchall()
-                label = list(set([x['Label'] for x in res]))
-                label = [i for i in label if i is not None]
                 if (res and (sort == "popular")):
-                    post = {'success': True, 'data': res, 'labels': label, "message": "Up to 5 most popular posts in the described cateogry listed"}
+                    post = {'success': True, 'data': res, "message": "Up to 5 most popular posts in the described cateogry listed"}
                 elif res:
-                    post = {'success': True, 'data': res, 'labels': label, "message": "Up to 5 most recent posts in the described cateogry listed"}
+                    post = {'success': True, 'data': res, "message": "Up to 5 most recent posts in the described cateogry listed"}
                 else:
                     post = {'success': False, 'data': res, 'message': 'No popular posts found'}
             except pymysql.Error as e:
@@ -712,6 +708,21 @@ class ForumPostResource:
                 sql = "INSERT INTO ms3.Response_Thumbs VALUES (DEFAULT,%s,%s)"
                 cur.execute(sql, args=(resp_id, user_id))
                 result = {'success': True, 'message': 'Thumb added to Response'}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
+    def get_labels():
+        sql = "SELECT DISTINCT(Label) FROM ms3.Post ORDER BY Label;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql)
+            res = cur.fetchall()
+            label = list(set([x['Label'] for x in res]))
+            label = [i for i in label if i is not None]
+            result = {'success': True, 'labels': label}
         except pymysql.Error as e:
             print(e)
             result = {'success': False, 'message': str(e)}

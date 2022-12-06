@@ -398,6 +398,16 @@ def add_loc():
 
     return rsp
 
+@application.route('/api/forum/labels', methods=["GET"])
+def get_labels():
+    if request.method == 'GET':
+        lab_res = ForumPostResource.get_labels()
+        rsp = Response(json.dumps(lab_res), status=200, content_type="application.json")
+    else:
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+
+    return rsp
+
 
 if __name__ == '__main__':
     application.run(host="localhost", port=5012, debug=True)
