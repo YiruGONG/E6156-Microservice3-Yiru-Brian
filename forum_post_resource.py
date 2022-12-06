@@ -479,6 +479,7 @@ class ForumPostResource:
         resp = {"location": "original", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
         return resp
 
+    @staticmethod
     def add_post(user_id, post_id, title, location, label, content):
         t = str(datetime.now())
         sql_query = "SELECT COUNT(Post_ID) FROM ms3.Post;"
