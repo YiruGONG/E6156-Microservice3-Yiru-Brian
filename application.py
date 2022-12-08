@@ -146,9 +146,14 @@ def hello_message():
     return welcome
 
 
-@application.route('/api/forum/cat/<cat>/sort/<sort>/page/<page>/user_id/<user_id>', methods=["GET"])
-def forum(user_id, cat, sort, page):
-    result = ForumPostResource.get_all_posts(user_id, cat, sort, page)
+@application.route('/api/forum/user_id/<user_id>', methods=["POST"])
+def forum(user_id):
+    result = ForumPostResource.get_all_posts(user_id,
+                                             str(request.get_json()["label"]),
+                                             str(request.get_json()["sort"]),
+                                             str(request.get_json()["limit"]),
+                                             str(request.get_json()["page"]),
+                                             str(request.get_json()["mypost"]))
 
     return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
@@ -186,11 +191,11 @@ def post_details(user_id, post_id):
     return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
 
-@application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
-def forum_mypost(user_id):
-    result = ForumPostResource.get_my_posts(user_id)
-
-    return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
+# @application.route('/api/forum/myposts/user_id/<user_id>', methods=["GET"])
+# def forum_mypost(user_id):
+#     result = ForumPostResource.get_my_posts(user_id)
+#
+#     return Response(json.dumps(result, cls=DTEncoder), status=200, content_type="application.json")
 
 @application.route('/api/forum/newpost/user_id/<user_id>', methods=["POST"])
 def add_post(user_id):
