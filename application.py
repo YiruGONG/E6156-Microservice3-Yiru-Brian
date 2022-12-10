@@ -413,6 +413,16 @@ def get_labels():
 
     return rsp
 
+@application.route('/api/forum/locations', methods=["GET"])
+def get_locations():
+    if request.method == 'GET':
+        lab_res = ForumPostResource.get_locations()
+        rsp = Response(json.dumps(lab_res), status=200, content_type="application.json")
+    else:
+        rsp = Response("Method failed", status=404, content_type="text/plain")
+
+    return rsp
+
 
 if __name__ == '__main__':
     application.run(host="localhost", port=5012, debug=True)

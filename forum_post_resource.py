@@ -768,6 +768,19 @@ class ForumPostResource:
             result = {'success': False, 'message': str(e)}
         return result
 
+    def get_locations():
+        sql = "SELECT Location_ID, Name, Address FROM ms3.Location;"
+        conn = ForumPostResource._get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql)
+            res = cur.fetchall()
+            result = {'success': True, 'locations': res}
+        except pymysql.Error as e:
+            print(e)
+            result = {'success': False, 'message': str(e)}
+        return result
+
 
 
 
