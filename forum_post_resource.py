@@ -58,7 +58,7 @@ class ForumPostResource:
     #         result = {'success': False, 'message': str(e)}
     #     return result
 
-    def get_all_posts(user_id, label = '5', sort = '1', limit = '2', page = '1', mypost = '0'):
+    def get_all_posts(user_id, label = 'None', sort = '1', limit = '2', page = '1', mypost = '0'):
         conn = ForumPostResource._get_connection()
         cur = conn.cursor()
         sql = """
@@ -78,7 +78,7 @@ class ForumPostResource:
         """
         limit = int(limit)
         offset = (int(page)-1)*int(limit)
-        if label != '5':
+        if label != 'None':
             label_dict = {'1': 'Administrative', '2': 'Lost and Found', '3': 'Call for Partners', '4': 'Others'}
             label = label_dict[label]
             s_list = sql.split("GROUP BY")
@@ -106,9 +106,9 @@ class ForumPostResource:
             print(sql)
             print(res_count_sql)
             try:
-                if ((label != '5') & (mypost == '1')):
+                if ((label != 'None') & (mypost == '1')):
                     cur.execute(sql, args=(user_id, t, label, user_id, limit, offset))
-                elif label != '5':
+                elif label != 'None':
                     cur.execute(sql, args=(user_id, t, label, limit, offset))
                 elif mypost == '1':
                     cur.execute(sql, args=(user_id, t, user_id, limit, offset))
@@ -116,9 +116,9 @@ class ForumPostResource:
                     cur.execute(sql, args=(user_id, t, limit, offset))
                 res = cur.fetchall()
                 if res:
-                    if ((label != '5') & (mypost == '1')):
+                    if ((label != 'None') & (mypost == '1')):
                         cur.execute(res_count_sql, args=(user_id, t, label, user_id))
-                    elif label != '5':
+                    elif label != 'None':
                         cur.execute(res_count_sql, args=(user_id, t, label))
                     elif mypost == '1':
                         cur.execute(res_count_sql, args=(user_id, t, user_id))
@@ -149,9 +149,9 @@ class ForumPostResource:
             print(sql)
             print(res_count_sql)
             try:
-                if ((label != '5') & (mypost == '1')):
+                if ((label != 'None') & (mypost == '1')):
                     cur.execute(sql, args=(user_id, label, user_id, limit, offset))
-                elif label != '5':
+                elif label != 'None':
                     cur.execute(sql, args=(user_id, label, limit, offset))
                 elif mypost == '1':
                     cur.execute(sql, args=(user_id, user_id, limit, offset))
@@ -159,9 +159,9 @@ class ForumPostResource:
                     cur.execute(sql, args=(user_id, limit, offset))
                 res = cur.fetchall()
                 if res:
-                    if ((label != '5') & (mypost == '1')):
+                    if ((label != 'None') & (mypost == '1')):
                         cur.execute(res_count_sql, args=(user_id, label, user_id))
-                    elif label != '5':
+                    elif label != 'None':
                         cur.execute(res_count_sql, args=(user_id, label))
                     elif mypost == '1':
                         cur.execute(res_count_sql, args=(user_id, user_id))
@@ -492,27 +492,34 @@ class ForumPostResource:
         return result
 
     def add_post_with_new_location(user_id, post_id, title, location, label, content, name, street, city, state):
-        input_location = ForumPostResource.location_lookup(street, " ", city, state, " ")
-        if input_location["success"]:
+        print(location)
+        if location == 'None':
             print("in first if")
-            input_location_address = input_location["address"]
-            print(input_location_address)
-            new_location = ForumPostResource.add_location(name, input_location_address)
-            if new_location["success"]:
+            input_location = ForumPostResource.location_lookup(street, " ", city, state, " ")
+            if input_location["success"]:
                 print("in second if")
-                sql = "SELECT MAX(Location_ID) FROM ms3.Location;"
-                conn = ForumPostResource._get_connection()
-                cur = conn.cursor()
-                try:
-                    cur.execute(sql)
-                    key, val = next(iter(cur.fetchone().items()))
-                    print(val)
-                    resp = {"location": "new", "result": ForumPostResource.add_post(user_id, post_id, title, val, label, content)}
-                    return resp
-                except pymysql.Error as e:
-                    print(e)
-                    return {'success': False, 'message': str(e)}
-        resp = {"location": "original", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+                input_location_address = input_location["address"]
+                print(input_location_address)
+                new_location = ForumPostResource.add_location(name, input_location_address)
+                if new_location["success"]:
+                    print("in third if")
+                    sql = "SELECT MAX(Location_ID) FROM ms3.Location;"
+                    conn = ForumPostResource._get_connection()
+                    cur = conn.cursor()
+                    try:
+                        cur.execute(sql)
+                        key, val = next(iter(cur.fetchone().items()))
+                        print(val)
+                        resp = {"location": "new", "result": ForumPostResource.add_post(user_id, post_id, title, val, label, content)}
+                    except pymysql.Error as e:
+                        print(e)
+                        return {'success': False, 'message': str(e)}
+                else:
+                    resp = {"location": "valid but not registered (or already registered). sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+            else:
+                resp = {"location": "invalid. sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+        else:
+            resp = {"location": "as provided", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
         return resp
 
     @staticmethod
