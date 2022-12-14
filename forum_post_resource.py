@@ -493,7 +493,7 @@ class ForumPostResource:
 
     def add_post_with_new_location(user_id, post_id, title, location, label, content, name, street, city, state):
         print(location)
-        if location == 'None':
+        if location == '':
             print("in first if")
             input_location = ForumPostResource.location_lookup(street, " ", city, state, " ")
             if input_location["success"]:
@@ -515,9 +515,9 @@ class ForumPostResource:
                         print(e)
                         return {'success': False, 'message': str(e)}
                 else:
-                    resp = {"location": "valid but not registered (or already registered). sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+                    resp = {"location": "valid but not registered (or already registered). sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, None, label, content)}
             else:
-                resp = {"location": "invalid. sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
+                resp = {"location": "invalid. sticking with none", "result": ForumPostResource.add_post(user_id, post_id, title, None, label, content)}
         else:
             resp = {"location": "as provided", "result": ForumPostResource.add_post(user_id, post_id, title, location, label, content)}
         return resp
