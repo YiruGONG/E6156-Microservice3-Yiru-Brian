@@ -3,6 +3,7 @@ import pymysql
 from datetime import datetime
 from smartystreets_python_sdk import StaticCredentials, exceptions, ClientBuilder
 from smartystreets_python_sdk.us_street import Lookup as StreetLookup
+import requests
 
 class ForumPostResource:
 
@@ -172,8 +173,15 @@ class ForumPostResource:
                         post = {'success': True, 'data': res, "count": count, "message": "Up to 5 most popular posts in the described cateogry"}
                     else:
                         post = {'success': True, 'data': res, "count": count, "message": "Up to 5 most recent posts in the described cateogry"}
+                    for apost in res:
+                        userid_post = apost['User_ID']
+                        user_info = requests.get(f'{os.environ.get("MS2_URL")}api/userprofile3/{userid_post}').json()['data'][0]
+                        apost['profile_pic'] = user_info['profile_pic']
+                        apost['username'] = user_info['username']
                 else:
                     post = {'success': False, 'data': res, 'message': 'No post found in the described category'}
+                
+
             except pymysql.Error as e:
                 print(e)
                 post = {'success': False, 'message': str(e)}
@@ -287,8 +295,15 @@ class ForumPostResource:
             res = cur.fetchall()
             if res:
                 post = {'success': True, 'post_data': res}
+                for apost in res:
+                    print(apost)
+                    userid_post = apost['User_ID']
+                    user_info = requests.get(f'{os.environ.get("MS2_URL")}api/userprofile3/{userid_post}').json()['data'][0]
+                    apost['profile_pic'] = user_info['profile_pic']
+                    apost['username'] = user_info['username']
             else:
                 post = {'success': False, 'message': 'Not Found', 'post_data': res}
+
         except pymysql.Error as e:
             print(e)
             post = {'success': False, 'message': str(e)}
@@ -309,8 +324,15 @@ class ForumPostResource:
             res = cur.fetchall()
             if res:
                 response = {'success': True, 'resp_data': res}
+                for aresponse in res:
+                    print(apost)
+                    userid_response = aresponse['User_ID']
+                    user_info = requests.get(f'{os.environ.get("MS2_URL")}api/userprofile3/{userid_response}').json()['data'][0]
+                    aresponse['profile_pic'] = user_info['profile_pic']
+                    aresponse['username'] = user_info['username']
             else:
                 response = {'success': False, 'message': 'Not Found', 'resp_data': res}
+            
         except pymysql.Error as e:
             print(e)
             response = {'success': False, 'message': str(e)}
