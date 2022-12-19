@@ -345,9 +345,9 @@ def edit_response(user_id, resp_id):
     return rsp
 
 
-@application.route('/api/forum/post/delete/<post_id>/', methods=["GET"])
-def delete_post(post_id):
-    result = ForumPostResource.post_delete(post_id)
+@application.route('/api/forum/deletepost', methods=["POST"])
+def delete_post():
+    result = ForumPostResource.post_delete(str(request.get_json()["post"]))
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
@@ -356,9 +356,9 @@ def delete_post(post_id):
     return rsp
 
 
-@application.route('/api/forum/resp/delete/<resp_id>/', methods=["GET"])
-def delete_resp(resp_id):
-    result = ForumPostResource.resp_delete(resp_id)
+@application.route('/api/forum/deleteresponse', methods=["POST"])
+def delete_resp():
+    result = ForumPostResource.resp_delete(str(request.get_json()["response"]))
     if result['success']:
         rsp = Response(json.dumps(result), status=200, content_type="application.json")
     else:
