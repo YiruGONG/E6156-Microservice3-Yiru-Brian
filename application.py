@@ -425,7 +425,8 @@ def get_locations():
 
 
 if __name__ == '__main__':
-    application.run(host="localhost", port=5012, debug=True)
+    # application.run(host="localhost", port=5012, debug=True)
+    application.run(host="0.0.0.0", port=5012, debug=True)
 
 """
 def application(environ, start_response):

@@ -453,8 +453,8 @@ class ForumPostResource:
 
     @staticmethod
     def location_lookup(line1, line2, city, state, zipcode):
-        auth_id = "2b3776cb-23dd-3197-5bee-358c9aed0cb2"
-        auth_token = "rTmcnZG9bg5nN95rTJp3"
+        auth_id = os.environ.get("SMARTY_AUTH_ID")
+        auth_token = os.environ.get("SMARTY_AUTH_TOKEN")
 
         credentials = StaticCredentials(auth_id, auth_token)
         client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
